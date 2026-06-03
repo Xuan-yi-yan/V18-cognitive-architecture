@@ -177,3 +177,117 @@ GPU: NVIDIA GeForce RTX 5070 (12GB)
 最大单次训练: P1 128D×500epoch = 674s (11.2min)
 平均GPU显存: 65-75MB (极低, 架构轻量)
 参数量范围: 5K(P5) ~ 180K(P1扩容)
+
+
+七、V18 v3.0 全链路128D统一升级 (2026-06-04)
+=============================================
+
+[背景] 施工队提案: 消除非对称投影层(P1内部128D→输出32D), 全链路等温膨胀
+[选择] 方案B: 128D + 64头 (128÷64=2D/头, 物理自洽)
+
+7.1 配置变更
+------------
+- POS_DIM=8 (不变)
+- CONTENT_DIM: 24→120
+- CHAR_DIM: 32→128
+- WORD_DIM: 32→128 (统一!)
+- SENT_DIM: 64→256
+- ATTN_HEADS: 16→64
+- ATTN_DIM: 64→256
+- HIDDEN_DIM: 128→256
+- MOD_DIM: 32→128
+- 移除: P1_CONTENT_DIM, P1_CHAR_DIM, P1_WORD_OUT (全部吸收到统一常数)
+
+7.2 P1 模型变更
+---------------
+- ContentFusion 投影层: 删除 (120→24 Linear 不再需要)
+- word_table: 32D→128D
+- CrossAttention: W_q(256→256), W_k(128→256), W_v(128→256), W_o(256→128)
+- 语义融合改为直接相加: base_sem(120D) + attn_sem(120D) → normalize
+- 参数量: ~180K → ~515K
+
+7.3 P2-P9 变更
+---------------
+- P2 WordToCharDecoder: word_dim 32→128, hidden 128→256
+- P3 SubjectBindingModel: word_dim 32→128, attn_dim 64→256, heads 8→64
+- P5 SentenceSynthesis: word_dim 32→128, sem_dim 24→120, sent_dim 64→256
+  权重: w_subj=0.88, w_verb=0.96, w_obj=1.00 (Epoch 30)
+- P6 SentToWordsDecoder: sent_dim 64→256, word_dim 32→128, hidden 128→256
+- P7 CrossSentenceRouter: word_dim 32→128, attn_dim 64→256, sent_dim 64→256, heads 4→64
+- P8 CharToSent: char_dim 32→128, sent_dim 64→256
+- P9 SentToChars/Pipeline: 同步扩容
+
+7.4 训练结果 (128D统一版)
+--------------------------
+P1: Best Top-1=99.89% @Epoch 25 (旧版96.78%) ↑3.1%
+    Final=36.17% (过拟合崩溃, Early Stopping在峰值保存)
+    500epochs×1800词, 358s (6min)
+
+P2: Best cos=99.28% @Epoch 200 (旧版98.88%) ↑0.4%
+    200epochs, 164K参数
+
+P3: 全部7属性 100%, 300epochs/属性
+    主语 pos=0.7180 neg=0.0221
+    谓语 pos=0.7306 neg=0.1365
+    宾语 pos=0.7227 neg=-0.1552
+    定语 pos=0.7029 neg=0.0326
+    状语 pos=0.7239 neg=-0.3527
+    补语 pos=0.7052 neg=-0.1622
+    虚词 pos=0.7539 neg=-0.0495
+
+P5: 初版 gap=0.034 (FAIL, 500epoch过拟合)
+    重训: Early Stopping + lr=0.002
+    Best gap=1.459 @Epoch 30 (旧版0.736) ↑98%
+    w_subj=0.88, w_verb=0.96, w_obj=1.00
+
+P6: 单独训练 cos=86.68% (FAIL)
+    桥接训练(P8→P6联合): cos=99.33% @Epoch 300
+    sent_cos=99.78%, word_cos=99.33%
+    结论: P6必须与P8联合训练, 单独训练会产生域偏移
+
+P7: cos=99.99%
+    30个A-B句对, 仅5对字符在P1词表内(词表覆盖面不足)
+    注意力均匀(~0.048/词 = 1/21), 小数据集特征
+
+P8: cos=99.98% (旧版99.5%)
+    500epochs, 与P5句子向量对齐
+
+P8↔P5 句子对齐: cos=99.99% (桥接训练后稳定, 之前震荡±0.5)
+
+7.5 全链路管线测试
+------------------
+P8(字→句) → P6-bridge(句→词) → P1词表匹配
+结果: P6词向量余弦99.33%但在1800词检索中精度不足
+原因: 100句模板数据不足以支撑128D空间的泛化
+     词向量接近目标但1/1800最近邻检索容错率低
+
+7.6 新增问题
+------------
+1. P6独立训练域偏移 (16:00)
+   原因: P6在P5句向量上训练, 但在P8句向量上推理
+   修复: P8→P6桥接联合训练, 让P6直接学习P8的句向量分布
+
+2. P3_data文件名编码损坏
+   原因: GBK/UTF-8混用导致中文文件名变成乱码
+   修复: 全部重命名为ASCII文件名
+   words_主语→words_subj, words_谓语→words_verb, etc.
+   主语词表(269词)丢失, 从P3 checkpoint恢复到32词
+
+3. GitHub终端推送认证失败
+   原因: git走代理时credential helper失效
+   修复: gh auth setup-git + 代理环境变量
+
+7.7 下一阶段
+------------
+1. 数据规模化 (最优先): 500+句 → 5000+句, 5000+词表
+2. P6检索精度: 更多训练句 → 提高1/1800匹配准确率
+3. P7词表扩展: 补充常用字(什么/谁/苹果/电影等)到P1
+4. 真实语料: 用真实中文对话替代模板句
+5. 全链路端到端: 当P6检索达标后, 完整char→word→attr管线
+
+7.8 128D版性能总结
+------------------
+GPU显存: 70-75MB (仍极低)
+参数量: P1=515K, P2=165K, P3=378K, P5=90K, P6=247K, P7=230K, P8=99K
+总训练时间: ~20分钟 (全部层级)
+GitHub: https://github.com/Xuan-yi-yan/V18-cognitive-architecture

@@ -73,17 +73,27 @@
 | **P2** | Word → Char · 词→字 | 128D word → 2 chars | Cosine Similarity | **99.28%** | ✓ |
 | **P3** | Attribute Binding · 属性绑定 | word → 7 categories | Classification | **100%** | ✓ |
 | **P5** | Words → Sentence · 词→句 | n×128D → 256D | Order Gap | **1.459** | ✓ |
-| **P6** | Sentence → Words · 句→词 | 256D → n×128D | Cosine Similarity | 86.68%* | ~ |
-| **P7** | Cross-Sentence · 跨句路由 | A-words → B-sent | Cosine Similarity | **~99.98%** | ✓ |
+| **P6** | Sentence → Words · 句→词 | 256D → n×128D | Cosine (bridge) | **99.33%** | ✓ |
+| **P7** | Cross-Sentence · 跨句路由 | A-words → B-sent | Cosine Similarity | **99.99%** | ✓ |
 | **P8** | Chars → Sentence · 字→句 | char seq → 256D | Cosine Similarity | **99.98%** | ✓ |
+| **P8↔P5** | Char↔Word Sentence Align | P8-sent vs P5-sent | Cosine Similarity | **99.99%** | ✓ |
 | **P9** | Unified Pipeline · 统合管线 | chars → sent+words | End-to-end | — | ✓ |
 
-*\*P6 reaches ~99% with P8→P6 bridge training (see `P6_sent_word/train_bridge.py`)*
+### Cross-Layer Integration · 跨层联动
+
+| Integration | Description | Metric | Score |
+|:-----------:|-------------|--------|------:|
+| P1 ↔ P2 | Word vector roundtrip | Cosine | 99.28% |
+| P5 ↔ P6 | Sentence ↔ Words roundtrip | Cosine | 99.33% |
+| P8 ↔ P5 | Char-level vs Word-level sentence | Cosine | 99.99% |
+| P8 → P6 → P1 | Full char→word retrieval* | Accuracy | limited |
+
+*\*P6 decodes word vectors accurately (99.33%) but 1-of-1800 nearest-neighbor retrieval requires more training data diversity.*
 
 **Vocabulary:** 1,800 Chinese words, 734 unique characters  
-**Training data:** 100 template sentences (subject-verb-object)  
+**Training data:** 100 template sentences (subject-verb-object) — *data-limited, scaling to 500+ sentences is the next priority*  
 **Hardware:** NVIDIA RTX 5070 12GB, GPU memory ~75MB, CUDA 12.8, PyTorch 2.12  
-**Total training time:** ~30 minutes for all layers
+**Total training time:** ~20 minutes for all layers
 
 ---
 
