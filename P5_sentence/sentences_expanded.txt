@@ -1,0 +1,603 @@
+# V18 扩展训练句 (自动生成, 600句)
+# 格式: 编号 | 词:角色 词:角色 ...
+
+1|作家:subj 交:verb 法律:obj
+2|作家:subj 交:verb 网络:obj
+3|作家:subj 修:verb 文学:obj
+4|作家:subj 关:verb
+5|作家:subj 关:verb 历史:obj
+6|作家:subj 关:verb 城市:obj
+7|作家:subj 写:verb 药品:obj
+8|作家:subj 写:verb 蔬菜:obj
+9|作家:subj 吃:verb 网络:obj
+10|作家:subj 唱:verb 桥梁:obj
+11|作家:subj 唱:verb 药品:obj
+12|作家:subj 学:verb
+13|作家:subj 帮:verb 法律:obj
+14|作家:subj 开:verb 知识:obj
+15|作家:subj 扫:verb 化学:obj
+16|作家:subj 扫:verb 硬件:obj
+17|作家:subj 扫:verb 网络:obj
+18|作家:subj 找:verb 数学:obj
+19|作家:subj 拉:verb 法律:obj
+20|作家:subj 拉:verb 系统:obj
+21|作家:subj 教:verb
+22|作家:subj 用:verb 医学:obj
+23|作家:subj 画:verb
+24|作家:subj 画:verb 药品:obj
+25|作家:subj 算:verb 化学:obj
+26|作家:subj 算:verb 电影:obj
+27|作家:subj 算:verb 知识:obj
+28|作家:subj 算:verb 音乐:obj
+29|作家:subj 给:verb 文学:obj
+30|作家:subj 记:verb 硬件:obj
+31|作家:subj 记:verb 系统:obj
+32|作家:subj 记:verb 音乐:obj
+33|作家:subj 讲:verb 药品:obj
+34|作家:subj 读:verb 桥梁:obj
+35|作家:subj 读:verb 蔬菜:obj
+36|作家:subj 读:verb 道路:obj
+37|作家:subj 送:verb 化学:obj
+38|作家:subj 送:verb 软件:obj
+39|作家:subj 问:verb 硬件:obj
+40|作家:subj 问:verb 经济:obj
+41|作家:subj 问:verb 道路:obj
+42|医生:subj 交:verb 法律:obj
+43|医生:subj 交:verb 艺术:obj
+44|医生:subj 修:verb
+45|医生:subj 修:verb 桥梁:obj
+46|医生:subj 修:verb 蔬菜:obj
+47|医生:subj 关:verb 地理:obj
+48|医生:subj 关:verb 法律:obj
+49|医生:subj 养:verb 数学:obj
+50|医生:subj 养:verb 硬件:obj
+51|医生:subj 写:verb
+52|医生:subj 写:verb 医学:obj
+53|医生:subj 写:verb 音乐:obj
+54|医生:subj 吃:verb 地理:obj
+55|医生:subj 唱:verb 法律:obj
+56|医生:subj 唱:verb 硬件:obj
+57|医生:subj 唱:verb 科学:obj
+58|医生:subj 学:verb
+59|医生:subj 学:verb 数学:obj
+60|医生:subj 建:verb 电影:obj
+61|医生:subj 扫:verb
+62|医生:subj 扫:verb 法律:obj
+63|医生:subj 找:verb
+64|医生:subj 找:verb 化学:obj
+65|医生:subj 拉:verb
+66|医生:subj 拉:verb 法律:obj
+67|医生:subj 拉:verb 硬件:obj
+68|医生:subj 拍:verb 软件:obj
+69|医生:subj 教:verb 物理:obj
+70|医生:subj 给:verb 化学:obj
+71|医生:subj 讲:verb 物理:obj
+72|医生:subj 讲:verb 知识:obj
+73|医生:subj 读:verb 地理:obj
+74|医生:subj 读:verb 系统:obj
+75|医生:subj 跳:verb
+76|医生:subj 送:verb 地理:obj
+77|医生:subj 送:verb 药品:obj
+78|医生:subj 问:verb
+79|医生:subj 问:verb 经济:obj
+80|司机:subj 修:verb 音乐:obj
+81|司机:subj 养:verb 蔬菜:obj
+82|司机:subj 写:verb
+83|司机:subj 写:verb 生物:obj
+84|司机:subj 吃:verb
+85|司机:subj 吃:verb 物理:obj
+86|司机:subj 学:verb 药品:obj
+87|司机:subj 建:verb
+88|司机:subj 开:verb 数据:obj
+89|司机:subj 开:verb 网络:obj
+90|司机:subj 开:verb 蔬菜:obj
+91|司机:subj 扫:verb 药品:obj
+92|司机:subj 拉:verb
+93|司机:subj 拉:verb 文学:obj
+94|司机:subj 教:verb 地理:obj
+95|司机:subj 用:verb 地理:obj
+96|司机:subj 画:verb 房屋:obj
+97|司机:subj 给:verb 数学:obj
+98|司机:subj 给:verb 物理:obj
+99|司机:subj 记:verb
+100|司机:subj 记:verb 医学:obj
+101|司机:subj 记:verb 系统:obj
+102|司机:subj 讲:verb 生物:obj
+103|司机:subj 跳:verb
+104|司机:subj 送:verb 知识:obj
+105|司机:subj 问:verb 地理:obj
+106|同事:subj 买:verb
+107|同事:subj 买:verb 电影:obj
+108|同事:subj 买:verb 系统:obj
+109|同事:subj 修:verb
+110|同事:subj 修:verb 房屋:obj
+111|同事:subj 修:verb 数据:obj
+112|同事:subj 修:verb 物理:obj
+113|同事:subj 关:verb
+114|同事:subj 关:verb 医学:obj
+115|同事:subj 关:verb 历史:obj
+116|同事:subj 关:verb 数据:obj
+117|同事:subj 养:verb 文学:obj
+118|同事:subj 养:verb 科学:obj
+119|同事:subj 写:verb 房屋:obj
+120|同事:subj 写:verb 数学:obj
+121|同事:subj 吃:verb 桥梁:obj
+122|同事:subj 唱:verb 物理:obj
+123|同事:subj 学:verb
+124|同事:subj 帮:verb 地理:obj
+125|同事:subj 帮:verb 数据:obj
+126|同事:subj 建:verb 桥梁:obj
+127|同事:subj 建:verb 硬件:obj
+128|同事:subj 开:verb
+129|同事:subj 开:verb 知识:obj
+130|同事:subj 扫:verb 药品:obj
+131|同事:subj 找:verb 电池:obj
+132|同事:subj 拉:verb 数据:obj
+133|同事:subj 拉:verb 经济:obj
+134|同事:subj 拉:verb 蔬菜:obj
+135|同事:subj 拍:verb 软件:obj
+136|同事:subj 教:verb 生物:obj
+137|同事:subj 用:verb 道路:obj
+138|同事:subj 画:verb 艺术:obj
+139|同事:subj 算:verb 化学:obj
+140|同事:subj 算:verb 艺术:obj
+141|同事:subj 算:verb 道路:obj
+142|同事:subj 给:verb
+143|同事:subj 记:verb 医学:obj
+144|同事:subj 讲:verb
+145|同事:subj 讲:verb 艺术:obj
+146|同事:subj 读:verb
+147|同事:subj 读:verb 硬件:obj
+148|同事:subj 跳:verb 城市:obj
+149|同事:subj 跳:verb 软件:obj
+150|同事:subj 问:verb 历史:obj
+151|同事:subj 问:verb 系统:obj
+152|同学:subj 养:verb 数据:obj
+153|同学:subj 养:verb 法律:obj
+154|同学:subj 养:verb 软件:obj
+155|同学:subj 写:verb 音乐:obj
+156|同学:subj 吃:verb
+157|同学:subj 唱:verb 硬件:obj
+158|同学:subj 建:verb 医学:obj
+159|同学:subj 扫:verb
+160|同学:subj 找:verb 医学:obj
+161|同学:subj 找:verb 程序:obj
+162|同学:subj 找:verb 经济:obj
+163|同学:subj 拉:verb 医学:obj
+164|同学:subj 拍:verb 蔬菜:obj
+165|同学:subj 教:verb 历史:obj
+166|同学:subj 教:verb 道路:obj
+167|同学:subj 用:verb
+168|同学:subj 画:verb 经济:obj
+169|同学:subj 算:verb 地理:obj
+170|同学:subj 算:verb 网络:obj
+171|同学:subj 给:verb
+172|同学:subj 给:verb 音乐:obj
+173|同学:subj 记:verb 艺术:obj
+174|同学:subj 讲:verb 历史:obj
+175|同学:subj 讲:verb 知识:obj
+176|同学:subj 讲:verb 药品:obj
+177|同学:subj 读:verb
+178|同学:subj 读:verb 数学:obj
+179|同学:subj 读:verb 物理:obj
+180|同学:subj 读:verb 科学:obj
+181|同学:subj 跳:verb 法律:obj
+182|同学:subj 跳:verb 生物:obj
+183|同学:subj 跳:verb 知识:obj
+184|同学:subj 跳:verb 网络:obj
+185|同学:subj 跳:verb 蔬菜:obj
+186|同学:subj 送:verb 医学:obj
+187|同学:subj 问:verb 法律:obj
+188|同学:subj 问:verb 知识:obj
+189|商人:subj 买:verb
+190|商人:subj 买:verb 硬件:obj
+191|商人:subj 买:verb 衣服:obj
+192|商人:subj 交:verb
+193|商人:subj 交:verb 电池:obj
+194|商人:subj 修:verb
+195|商人:subj 修:verb 城市:obj
+196|商人:subj 养:verb
+197|商人:subj 养:verb 硬件:obj
+198|商人:subj 养:verb 药品:obj
+199|商人:subj 养:verb 道路:obj
+200|商人:subj 吃:verb 软件:obj
+201|商人:subj 唱:verb
+202|商人:subj 唱:verb 电影:obj
+203|商人:subj 唱:verb 道路:obj
+204|商人:subj 帮:verb 程序:obj
+205|商人:subj 建:verb
+206|商人:subj 开:verb 物理:obj
+207|商人:subj 找:verb 经济:obj
+208|商人:subj 拉:verb 桥梁:obj
+209|商人:subj 拉:verb 道路:obj
+210|商人:subj 拍:verb
+211|商人:subj 教:verb 硬件:obj
+212|商人:subj 教:verb 药品:obj
+213|商人:subj 用:verb
+214|商人:subj 画:verb 法律:obj
+215|商人:subj 记:verb 城市:obj
+216|商人:subj 记:verb 硬件:obj
+217|商人:subj 记:verb 药品:obj
+218|商人:subj 读:verb 物理:obj
+219|商人:subj 跳:verb 房屋:obj
+220|商人:subj 跳:verb 数学:obj
+221|商人:subj 跳:verb 电影:obj
+222|商人:subj 送:verb 经济:obj
+223|商人:subj 问:verb 电池:obj
+224|学生:subj 买:verb 电影:obj
+225|学生:subj 交:verb 知识:obj
+226|学生:subj 关:verb
+227|学生:subj 养:verb
+228|学生:subj 养:verb 法律:obj
+229|学生:subj 写:verb
+230|学生:subj 写:verb 文学:obj
+231|学生:subj 写:verb 衣服:obj
+232|学生:subj 唱:verb 蔬菜:obj
+233|学生:subj 唱:verb 软件:obj
+234|学生:subj 学:verb
+235|学生:subj 学:verb 科学:obj
+236|学生:subj 学:verb 系统:obj
+237|学生:subj 帮:verb
+238|学生:subj 帮:verb 房屋:obj
+239|学生:subj 帮:verb 桥梁:obj
+240|学生:subj 帮:verb 艺术:obj
+241|学生:subj 建:verb 数据:obj
+242|学生:subj 建:verb 电影:obj
+243|学生:subj 开:verb 衣服:obj
+244|学生:subj 拉:verb 数据:obj
+245|学生:subj 拉:verb 蔬菜:obj
+246|学生:subj 教:verb
+247|学生:subj 教:verb 数学:obj
+248|学生:subj 教:verb 蔬菜:obj
+249|学生:subj 画:verb 道路:obj
+250|学生:subj 给:verb 数学:obj
+251|学生:subj 给:verb 物理:obj
+252|学生:subj 记:verb 数学:obj
+253|学生:subj 讲:verb 桥梁:obj
+254|学生:subj 读:verb
+255|学生:subj 读:verb 蔬菜:obj
+256|学生:subj 送:verb
+257|学生:subj 送:verb 数据:obj
+258|学生:subj 问:verb 蔬菜:obj
+259|家人:subj 买:verb
+260|家人:subj 买:verb 桥梁:obj
+261|家人:subj 买:verb 生物:obj
+262|家人:subj 修:verb 城市:obj
+263|家人:subj 修:verb 数据:obj
+264|家人:subj 关:verb 经济:obj
+265|家人:subj 养:verb
+266|家人:subj 养:verb 房屋:obj
+267|家人:subj 写:verb 文学:obj
+268|家人:subj 写:verb 艺术:obj
+269|家人:subj 吃:verb
+270|家人:subj 吃:verb 医学:obj
+271|家人:subj 吃:verb 电影:obj
+272|家人:subj 吃:verb 电池:obj
+273|家人:subj 唱:verb 硬件:obj
+274|家人:subj 学:verb 地理:obj
+275|家人:subj 学:verb 房屋:obj
+276|家人:subj 建:verb 经济:obj
+277|家人:subj 建:verb 道路:obj
+278|家人:subj 开:verb 电影:obj
+279|家人:subj 扫:verb 道路:obj
+280|家人:subj 找:verb 地理:obj
+281|家人:subj 拉:verb 软件:obj
+282|家人:subj 拍:verb 软件:obj
+283|家人:subj 教:verb 数据:obj
+284|家人:subj 用:verb 电影:obj
+285|家人:subj 用:verb 经济:obj
+286|家人:subj 用:verb 衣服:obj
+287|家人:subj 用:verb 道路:obj
+288|家人:subj 算:verb
+289|家人:subj 读:verb
+290|家人:subj 跳:verb 衣服:obj
+291|家人:subj 跳:verb 音乐:obj
+292|家人:subj 送:verb
+293|家人:subj 送:verb 城市:obj
+294|工人:subj 交:verb
+295|工人:subj 修:verb
+296|工人:subj 写:verb
+297|工人:subj 吃:verb 化学:obj
+298|工人:subj 吃:verb 电影:obj
+299|工人:subj 吃:verb 道路:obj
+300|工人:subj 唱:verb
+301|工人:subj 唱:verb 数据:obj
+302|工人:subj 唱:verb 物理:obj
+303|工人:subj 唱:verb 硬件:obj
+304|工人:subj 学:verb 物理:obj
+305|工人:subj 帮:verb 电池:obj
+306|工人:subj 建:verb 医学:obj
+307|工人:subj 建:verb 艺术:obj
+308|工人:subj 开:verb
+309|工人:subj 开:verb 城市:obj
+310|工人:subj 扫:verb 文学:obj
+311|工人:subj 找:verb
+312|工人:subj 拍:verb 硬件:obj
+313|工人:subj 拍:verb 药品:obj
+314|工人:subj 拍:verb 道路:obj
+315|工人:subj 教:verb 城市:obj
+316|工人:subj 用:verb 房屋:obj
+317|工人:subj 给:verb
+318|工人:subj 给:verb 电池:obj
+319|工人:subj 给:verb 药品:obj
+320|工人:subj 记:verb 物理:obj
+321|工人:subj 记:verb 电池:obj
+322|工人:subj 记:verb 艺术:obj
+323|工人:subj 讲:verb 城市:obj
+324|工人:subj 讲:verb 程序:obj
+325|工人:subj 跳:verb 城市:obj
+326|工人:subj 跳:verb 药品:obj
+327|工人:subj 跳:verb 衣服:obj
+328|工人:subj 送:verb 法律:obj
+329|工人:subj 送:verb 电影:obj
+330|工人:subj 送:verb 硬件:obj
+331|工人:subj 送:verb 音乐:obj
+332|律师:subj 买:verb 软件:obj
+333|律师:subj 交:verb 系统:obj
+334|律师:subj 修:verb 物理:obj
+335|律师:subj 关:verb 地理:obj
+336|律师:subj 关:verb 经济:obj
+337|律师:subj 养:verb
+338|律师:subj 养:verb 经济:obj
+339|律师:subj 养:verb 艺术:obj
+340|律师:subj 养:verb 药品:obj
+341|律师:subj 写:verb
+342|律师:subj 吃:verb
+343|律师:subj 吃:verb 桥梁:obj
+344|律师:subj 唱:verb 城市:obj
+345|律师:subj 唱:verb 数据:obj
+346|律师:subj 唱:verb 道路:obj
+347|律师:subj 帮:verb
+348|律师:subj 帮:verb 科学:obj
+349|律师:subj 开:verb 电影:obj
+350|律师:subj 开:verb 知识:obj
+351|律师:subj 扫:verb 医学:obj
+352|律师:subj 扫:verb 程序:obj
+353|律师:subj 扫:verb 衣服:obj
+354|律师:subj 找:verb 艺术:obj
+355|律师:subj 拉:verb 数据:obj
+356|律师:subj 拉:verb 系统:obj
+357|律师:subj 教:verb 城市:obj
+358|律师:subj 教:verb 软件:obj
+359|律师:subj 用:verb 硬件:obj
+360|律师:subj 画:verb 城市:obj
+361|律师:subj 算:verb 法律:obj
+362|律师:subj 给:verb
+363|律师:subj 给:verb 硬件:obj
+364|律师:subj 给:verb 衣服:obj
+365|律师:subj 记:verb
+366|律师:subj 读:verb 数学:obj
+367|律师:subj 读:verb 法律:obj
+368|律师:subj 读:verb 生物:obj
+369|律师:subj 读:verb 药品:obj
+370|律师:subj 问:verb
+371|护士:subj 交:verb 历史:obj
+372|护士:subj 交:verb 地理:obj
+373|护士:subj 交:verb 房屋:obj
+374|护士:subj 交:verb 软件:obj
+375|护士:subj 关:verb
+376|护士:subj 关:verb 房屋:obj
+377|护士:subj 养:verb 电池:obj
+378|护士:subj 养:verb 硬件:obj
+379|护士:subj 写:verb 历史:obj
+380|护士:subj 写:verb 法律:obj
+381|护士:subj 吃:verb 历史:obj
+382|护士:subj 吃:verb 电池:obj
+383|护士:subj 吃:verb 艺术:obj
+384|护士:subj 唱:verb 房屋:obj
+385|护士:subj 帮:verb
+386|护士:subj 帮:verb 硬件:obj
+387|护士:subj 建:verb
+388|护士:subj 开:verb 网络:obj
+389|护士:subj 扫:verb
+390|护士:subj 找:verb
+391|护士:subj 找:verb 电池:obj
+392|护士:subj 找:verb 硬件:obj
+393|护士:subj 找:verb 蔬菜:obj
+394|护士:subj 找:verb 道路:obj
+395|护士:subj 拍:verb 法律:obj
+396|护士:subj 教:verb 数据:obj
+397|护士:subj 算:verb 化学:obj
+398|护士:subj 给:verb
+399|护士:subj 给:verb 电池:obj
+400|护士:subj 给:verb 艺术:obj
+401|护士:subj 记:verb 文学:obj
+402|护士:subj 讲:verb 程序:obj
+403|护士:subj 读:verb 生物:obj
+404|护士:subj 读:verb 科学:obj
+405|护士:subj 读:verb 药品:obj
+406|护士:subj 读:verb 音乐:obj
+407|护士:subj 送:verb
+408|护士:subj 送:verb 科学:obj
+409|护士:subj 问:verb 地理:obj
+410|朋友:subj 买:verb
+411|朋友:subj 买:verb 医学:obj
+412|朋友:subj 交:verb 艺术:obj
+413|朋友:subj 修:verb 科学:obj
+414|朋友:subj 修:verb 经济:obj
+415|朋友:subj 修:verb 衣服:obj
+416|朋友:subj 关:verb 房屋:obj
+417|朋友:subj 关:verb 艺术:obj
+418|朋友:subj 关:verb 衣服:obj
+419|朋友:subj 养:verb
+420|朋友:subj 写:verb 历史:obj
+421|朋友:subj 吃:verb
+422|朋友:subj 吃:verb 系统:obj
+423|朋友:subj 唱:verb 法律:obj
+424|朋友:subj 唱:verb 电影:obj
+425|朋友:subj 学:verb
+426|朋友:subj 学:verb 网络:obj
+427|朋友:subj 学:verb 软件:obj
+428|朋友:subj 帮:verb
+429|朋友:subj 建:verb 医学:obj
+430|朋友:subj 开:verb 电池:obj
+431|朋友:subj 扫:verb 文学:obj
+432|朋友:subj 扫:verb 生物:obj
+433|朋友:subj 拉:verb 道路:obj
+434|朋友:subj 教:verb
+435|朋友:subj 画:verb 医学:obj
+436|朋友:subj 画:verb 物理:obj
+437|朋友:subj 算:verb
+438|朋友:subj 算:verb 系统:obj
+439|朋友:subj 给:verb 电影:obj
+440|朋友:subj 记:verb
+441|朋友:subj 记:verb 系统:obj
+442|朋友:subj 讲:verb 艺术:obj
+443|朋友:subj 读:verb 电池:obj
+444|朋友:subj 送:verb 数学:obj
+445|朋友:subj 送:verb 数据:obj
+446|歌手:subj 买:verb 物理:obj
+447|歌手:subj 买:verb 程序:obj
+448|歌手:subj 交:verb 生物:obj
+449|歌手:subj 交:verb 衣服:obj
+450|歌手:subj 修:verb 地理:obj
+451|歌手:subj 修:verb 物理:obj
+452|歌手:subj 修:verb 系统:obj
+453|歌手:subj 关:verb 数学:obj
+454|歌手:subj 关:verb 桥梁:obj
+455|歌手:subj 关:verb 经济:obj
+456|歌手:subj 关:verb 蔬菜:obj
+457|歌手:subj 养:verb 数学:obj
+458|歌手:subj 养:verb 数据:obj
+459|歌手:subj 养:verb 药品:obj
+460|歌手:subj 养:verb 衣服:obj
+461|歌手:subj 吃:verb 数学:obj
+462|歌手:subj 唱:verb 知识:obj
+463|歌手:subj 学:verb 医学:obj
+464|歌手:subj 学:verb 程序:obj
+465|歌手:subj 建:verb 化学:obj
+466|歌手:subj 建:verb 法律:obj
+467|歌手:subj 开:verb 电影:obj
+468|歌手:subj 扫:verb
+469|歌手:subj 找:verb
+470|歌手:subj 找:verb 文学:obj
+471|歌手:subj 找:verb 程序:obj
+472|歌手:subj 找:verb 药品:obj
+473|歌手:subj 拉:verb 城市:obj
+474|歌手:subj 拉:verb 系统:obj
+475|歌手:subj 拍:verb 电影:obj
+476|歌手:subj 用:verb
+477|歌手:subj 用:verb 化学:obj
+478|歌手:subj 用:verb 音乐:obj
+479|歌手:subj 画:verb 软件:obj
+480|歌手:subj 算:verb 法律:obj
+481|歌手:subj 算:verb 蔬菜:obj
+482|歌手:subj 记:verb
+483|歌手:subj 记:verb 房屋:obj
+484|歌手:subj 讲:verb 文学:obj
+485|歌手:subj 讲:verb 桥梁:obj
+486|歌手:subj 讲:verb 知识:obj
+487|歌手:subj 讲:verb 经济:obj
+488|歌手:subj 跳:verb 医学:obj
+489|歌手:subj 跳:verb 系统:obj
+490|歌手:subj 跳:verb 音乐:obj
+491|歌手:subj 送:verb
+492|歌手:subj 送:verb 数学:obj
+493|歌手:subj 问:verb 网络:obj
+494|画家:subj 买:verb 药品:obj
+495|画家:subj 交:verb
+496|画家:subj 交:verb 数学:obj
+497|画家:subj 关:verb 房屋:obj
+498|画家:subj 关:verb 电池:obj
+499|画家:subj 养:verb 法律:obj
+500|画家:subj 吃:verb 文学:obj
+501|画家:subj 吃:verb 桥梁:obj
+502|画家:subj 吃:verb 软件:obj
+503|画家:subj 唱:verb 生物:obj
+504|画家:subj 学:verb
+505|画家:subj 学:verb 桥梁:obj
+506|画家:subj 帮:verb 地理:obj
+507|画家:subj 建:verb
+508|画家:subj 建:verb 科学:obj
+509|画家:subj 开:verb 物理:obj
+510|画家:subj 扫:verb 科学:obj
+511|画家:subj 扫:verb 道路:obj
+512|画家:subj 找:verb
+513|画家:subj 找:verb 数学:obj
+514|画家:subj 拉:verb 道路:obj
+515|画家:subj 拍:verb 法律:obj
+516|画家:subj 用:verb 数学:obj
+517|画家:subj 用:verb 桥梁:obj
+518|画家:subj 用:verb 程序:obj
+519|画家:subj 用:verb 衣服:obj
+520|画家:subj 算:verb 物理:obj
+521|画家:subj 读:verb 数学:obj
+522|画家:subj 跳:verb 医学:obj
+523|画家:subj 跳:verb 城市:obj
+524|画家:subj 送:verb 医学:obj
+525|画家:subj 送:verb 物理:obj
+526|画家:subj 送:verb 系统:obj
+527|画家:subj 送:verb 药品:obj
+528|画家:subj 问:verb
+529|画家:subj 问:verb 药品:obj
+530|老人:subj 买:verb 知识:obj
+531|老人:subj 买:verb 硬件:obj
+532|老人:subj 买:verb 药品:obj
+533|老人:subj 吃:verb 化学:obj
+534|老人:subj 吃:verb 网络:obj
+535|老人:subj 吃:verb 蔬菜:obj
+536|老人:subj 唱:verb
+537|老人:subj 唱:verb 系统:obj
+538|老人:subj 学:verb 医学:obj
+539|老人:subj 学:verb 城市:obj
+540|老人:subj 帮:verb 数学:obj
+541|老人:subj 建:verb 房屋:obj
+542|老人:subj 建:verb 物理:obj
+543|老人:subj 开:verb 城市:obj
+544|老人:subj 开:verb 音乐:obj
+545|老人:subj 扫:verb
+546|老人:subj 扫:verb 硬件:obj
+547|老人:subj 找:verb 电池:obj
+548|老人:subj 拍:verb 桥梁:obj
+549|老人:subj 拍:verb 物理:obj
+550|老人:subj 教:verb 药品:obj
+551|老人:subj 用:verb 系统:obj
+552|老人:subj 画:verb 科学:obj
+553|老人:subj 画:verb 艺术:obj
+554|老人:subj 算:verb 电池:obj
+555|老人:subj 记:verb 地理:obj
+556|老人:subj 记:verb 电池:obj
+557|老人:subj 讲:verb 房屋:obj
+558|老人:subj 讲:verb 桥梁:obj
+559|老人:subj 讲:verb 物理:obj
+560|老人:subj 读:verb
+561|老人:subj 读:verb 地理:obj
+562|老人:subj 读:verb 系统:obj
+563|老人:subj 读:verb 蔬菜:obj
+564|老人:subj 读:verb 道路:obj
+565|老人:subj 跳:verb 数据:obj
+566|老人:subj 问:verb 音乐:obj
+567|老师:subj 交:verb 医学:obj
+568|老师:subj 交:verb 文学:obj
+569|老师:subj 交:verb 硬件:obj
+570|老师:subj 交:verb 系统:obj
+571|老师:subj 修:verb 道路:obj
+572|老师:subj 关:verb 艺术:obj
+573|老师:subj 关:verb 衣服:obj
+574|老师:subj 养:verb 数据:obj
+575|老师:subj 养:verb 硬件:obj
+576|老师:subj 养:verb 软件:obj
+577|老师:subj 写:verb 化学:obj
+578|老师:subj 写:verb 系统:obj
+579|老师:subj 吃:verb
+580|老师:subj 吃:verb 桥梁:obj
+581|老师:subj 吃:verb 法律:obj
+582|老师:subj 吃:verb 程序:obj
+583|老师:subj 吃:verb 网络:obj
+584|老师:subj 吃:verb 衣服:obj
+585|老师:subj 学:verb 文学:obj
+586|老师:subj 学:verb 衣服:obj
+587|老师:subj 建:verb 知识:obj
+588|老师:subj 开:verb 房屋:obj
+589|老师:subj 找:verb 数学:obj
+590|老师:subj 找:verb 文学:obj
+591|老师:subj 拉:verb
+592|老师:subj 拉:verb 数学:obj
+593|老师:subj 拉:verb 电影:obj
+594|老师:subj 用:verb 艺术:obj
+595|老师:subj 给:verb 电池:obj
+596|老师:subj 记:verb 物理:obj
+597|老师:subj 讲:verb
+598|老师:subj 读:verb
+599|老师:subj 跳:verb 硬件:obj
+600|老师:subj 问:verb
