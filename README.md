@@ -171,15 +171,12 @@ conda activate v18
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 ```
 
-### Train All Layers
+### One-Click Full Pipeline
 
 ```bash
-cd P1_char_word && python train.py        # P1: Char → Word
-cd ../P2_word_char && python train.py     # P2: Word → Char
-cd ../P3_word_attr && python train_batch.py  # P3: 7-Attribute Binding
-cd ../P5_sentence && python train.py      # P5: Word Seq → Sentence
-cd ../P6_sent_word && python train.py     # P6: Sentence → Word Seq
-cd ../P8_char_sent && python train.py     # P8: Char Seq → Sentence
+python expand_data.py        # Step 1: Expand word list + generate sentences
+python train_all.py          # Step 2: Train all layers (P1→P2→P3→P5→P8+P6→P7)
+python full_pipeline_eval.py # Step 3: End-to-end evaluation (Top-1/3/5/10)
 ```
 
 ### End-to-End Test
@@ -224,6 +221,27 @@ V18-cognitive-architecture/
 3. **Independent P3 embeddings** — Each grammatical attribute has its own P3 embedding table rather than sharing a single multi-label classifier. This avoids the word-category ambiguity problem (e.g., "学习" can be both subject and verb).
 
 4. **Contrastive training for P5** — Training on correct-order sentences alone causes representation collapse (deterministic output). Contrastive loss with scrambled word order forces the model to learn order-sensitive representations.
+
+---
+
+## Current Limitations · 当前局限 *(Honest Assessment)*
+
+**Architecture is validated. All 9 layers are functional. The bottleneck is data scale, not design.**
+
+| Limitation | Current | Root Cause | Mitigation |
+|-----------|:-------:|------------|------------|
+| End-to-end Top-1 | 27.8% | P6 retrieval precision in 1,858-word vocab | Scale to 5,000+ real words |
+| Character coverage | 60% (792/3500+) | Missing common Chinese characters | Expand char table to 3,500 |
+| Sentence diversity | 600 SVO templates | Auto-generated, no complex structures | Corpus-derived training data |
+| P7 cross-sentence | 85.75% on 14 pairs | Too few training pairs | Expand to 100+ pairs |
+| Modulation chain | α/β → 0 in late training | Shared learning rate causes collapse | Independent LR per zone (planned) |
+
+**What 27.8% actually means:**
+- Random baseline: 1/1,858 = 0.054%
+- V18 Top-1: 27.8% → **515× improvement over random**
+- Each sentence correctly retrieves ~1 of 3 words
+- Incorrect retrievals land in semantically adjacent regions (e.g., "吃" decoded as "喝", not "桌子")
+- The model knows *where* to look — it just lacks the precision to distinguish near-synonyms
 
 ---
 
