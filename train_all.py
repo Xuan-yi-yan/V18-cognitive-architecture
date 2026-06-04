@@ -221,6 +221,9 @@ for epoch in range(1, P2_EPOCHS + 1):
             word_vec = p1(pair_ids, last_loss=last_loss)
         pred_c1, pred_c2 = p2(word_vec, last_loss=last_loss)
         loss, sim1, sim2 = p2_loss(pred_c1, pred_c2, real_c1, real_c2)
+        # 探索区防衰减: 惩罚explore_state norm过小
+        explore_norm = p2.explore_state.norm()
+        loss = loss + 0.001 * F.relu(0.1 - explore_norm)
         opt.zero_grad(); loss.backward(); opt.step()
         epoch_loss += loss.item(); epoch_sim1 += sim1; epoch_sim2 += sim2; nb += 1
         last_loss = loss.item()

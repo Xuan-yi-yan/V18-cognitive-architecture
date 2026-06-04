@@ -36,11 +36,15 @@ class WordToCharDecoder(nn.Module):
         c1 = self.c1_head(h)          # [b, 128]
         c2 = self.c2_head(h)          # [b, 128]
 
-        # 探索区 + 元学习调制 (与P5/P6/P8一致)
+        # Normalize: 防输出幅度塌缩 + 余弦损失只用方向
+        c1 = F.normalize(c1, dim=-1)
+        c2 = F.normalize(c2, dim=-1)
+
+        # 探索区 + 元学习调制 — 方向级微调, 不改变归一化后幅度
         loss_factor = min(last_loss * 20.0, 1.0)
         mod = self.meta_fc(self.explore_state * loss_factor)
-        c1 = c1 + mod.unsqueeze(0).expand(c1.shape[0], -1)
-        c2 = c2 + mod.unsqueeze(0).expand(c2.shape[0], -1)
+        c1 = F.normalize(c1 + 0.05 * mod.unsqueeze(0).expand(c1.shape[0], -1), dim=-1)
+        c2 = F.normalize(c2 + 0.05 * mod.unsqueeze(0).expand(c2.shape[0], -1), dim=-1)
 
         return c1, c2
 
