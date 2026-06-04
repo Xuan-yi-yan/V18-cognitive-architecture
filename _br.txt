@@ -1,0 +1,7 @@
+Bridge Diagnose | Seed=789 | 500epochs | log/5
+P1: Top-1=0.986
+P5: gap=1.3867773128673435
+Bridge data: 2000 groups (char vecs computed on-the-fly)
+P8+P6: 411,392 + P1_proj: 1,377,536 = 1,788,928 params
+P1 projection UNFROZEN for joint fine-tuning (lr=0.0002)
+E   1 | Loss=0.2315 | sent=0.9759 word=0.7482   | wp_norm=3.79 | sent_self=0.995 | gP8=0.044 gP6=0.322 | wc>.8=0.07 wc>.9=0.00 | best=0.7482
