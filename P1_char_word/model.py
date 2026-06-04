@@ -95,38 +95,38 @@ class MetaLearningZone(nn.Module):
         return self.transform(explore_modulation)
 
 
-class StagedProjection(nn.Module):
-    """分阶段投影: 2048→1024(*/门控) → 128(+-融合)
+class MLPProjection(nn.Module):
+    """v5.2 轻量非线性投影 (2层GELU + 强残差)
 
-    阶段1 (*/缩放): 乘性门控选择重要信号, 减半到1024D
-    阶段2 (+-缩放): 双路径加性融合, 缩放到目标128D
+    主路径: 2048→512(GELU)→128
+    残差:   Linear(2048→128) shortcut 直通 (保持梯度)
+    融合:   主路径 + 残差 → LayerNorm → 128D
     """
-    def __init__(self, in_dim=2048, mid_dim=1024, out_dim=128):
+    def __init__(self, in_dim=2048, hidden=512, out_dim=128):
         super().__init__()
-        # 阶段1: 乘性门控 2048→1024
-        self.main_1 = nn.Linear(in_dim, mid_dim, bias=False)
-        self.gate_1 = nn.Linear(in_dim, mid_dim, bias=False)
-        self.norm_1 = nn.LayerNorm(mid_dim)
+        # 主路径: 一层非线性压缩
+        self.fc1 = nn.Linear(in_dim, hidden, bias=False)
+        self.ln1 = nn.LayerNorm(hidden)
+        self.fc2 = nn.Linear(hidden, out_dim, bias=False)
 
-        # 阶段2: 加性双路径 1024→128
-        self.path_a = nn.Linear(mid_dim, out_dim, bias=False)
-        self.path_b = nn.Linear(mid_dim, out_dim, bias=False)
-        self.norm_out = nn.LayerNorm(out_dim)
+        # 残差 shortcut: 直通保底
+        self.shortcut = nn.Linear(in_dim, out_dim, bias=False)
+        self.ln_out = nn.LayerNorm(out_dim)
 
     def forward(self, x):
-        # 阶段1: */缩放 — 门控选择 + 归一到球面
-        main = self.main_1(x)
-        gate = torch.sigmoid(self.gate_1(x))
-        h = self.norm_1(main * gate)          # [b, 1024]
+        # 主路径: 非线性特征重组
+        h = F.gelu(self.ln1(self.fc1(x)))
+        h = self.fc2(h)
 
-        # 阶段2: +-缩放 — 双路径融合到目标维度
-        out = self.path_a(h) + self.path_b(h)  # [b, 128]
-        out = self.norm_out(out)
-        return out
+        # 残差 shortcut: 线性直通
+        s = self.shortcut(x)
+
+        # 融合
+        return self.ln_out(h + s)
 
 
 class CharToWordModel(nn.Module):
-    """P1 v5.1: 2048D内部编码 + 分阶段投影 → 128D词向量输出"""
+    """P1 v5.2: 2048D内部编码 + MLP非线性投影 → 128D词向量输出"""
     def __init__(self, num_chars, num_words):
         super().__init__()
         self.num_chars = num_chars
@@ -144,8 +144,8 @@ class CharToWordModel(nn.Module):
         self.explore_zone = ExplorationZone()
         self.meta_zone = MetaLearningZone()
 
-        # 分阶段投影: 2048D → 1024D(*/门控) → 128D(+-融合)
-        self.output_proj = StagedProjection(2048, 1024, 128)
+        # MLP非线性投影: 2048→512→128 + 残差shortcut
+        self.output_proj = MLPProjection(2048, 512, 128)
 
         # 词表: 128D (与下游统一)
         self.word_table = nn.Parameter(torch.randn(num_words, WORD_DIM) * 0.01)

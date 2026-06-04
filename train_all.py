@@ -176,7 +176,7 @@ for epoch in range(1, P1_EPOCHS + 1):
 
 print(f"[P1] DONE: best={best_top1:.4%} | {time.time()-t0:.0f}s")
 
-# 加载最佳P1并冻结
+# 加载最佳P1, 完全冻结 (投影层在Bridge阶段才解冻)
 ckpt = torch.load(os.path.join(SAVE_DIR, "P1_best.pt"), map_location=DEVICE)
 p1.load_state_dict(ckpt["model_state_dict"])
 for p in p1.parameters(): p.requires_grad = False; p1.eval()
@@ -204,11 +204,10 @@ for epoch in range(1, P2_EPOCHS + 1):
         idxs = perm[bs:be]
         pair_ids = torch.tensor([all_pairs[i] for i in idxs], device=DEVICE)
         with torch.no_grad():
-            # 获取P1内部字符向量→分阶段投影到128D
             _, _, full = p1.get_char_vectors(pair_ids)
-            real_c1 = p1.project_char(full[:, 0, :])  # [b, 2048]→[b, 128]
+            real_c1 = p1.project_char(full[:, 0, :])
             real_c2 = p1.project_char(full[:, 1, :])
-            word_vec = p1(pair_ids, last_loss=last_loss)  # [b, 128]
+            word_vec = p1(pair_ids, last_loss=last_loss)
         pred_c1, pred_c2 = p2(word_vec)
         loss, sim1, sim2 = p2_loss(pred_c1, pred_c2, real_c1, real_c2)
         opt.zero_grad(); loss.backward(); opt.step()
@@ -464,11 +463,21 @@ for words, roles in sentences:
 
 print(f"[桥接数据] {len(bridge_data)}组")
 
+# 解冻P1投影层: Bridge阶段联合微调
+for p in p1.output_proj.parameters():
+    p.requires_grad = True
+
 p8 = CharToSent(max_len=15).to(DEVICE)
 p6 = SentToWordsDecoder(max_words=3).to(DEVICE)
-print(f"[P8+P6] 参数: {sum(p.numel() for p in p8.parameters()) + sum(p.numel() for p in p6.parameters()):,}")
+n_b = sum(p.numel() for m in [p8,p6] for p in m.parameters())
+n_proj = sum(p.numel() for p in p1.output_proj.parameters())
+print(f"[P8+P6+Proj] {n_b:,} + {n_proj:,} = {n_b+n_proj:,} params")
 
-opt = torch.optim.Adam(list(p8.parameters()) + list(p6.parameters()), lr=0.002, weight_decay=1e-5)
+# P8+P6正常LR, 投影层1/10 LR
+opt = torch.optim.Adam([
+    {'params': list(p8.parameters()) + list(p6.parameters()), 'lr': 0.002},
+    {'params': p1.output_proj.parameters(), 'lr': 0.0002},
+], weight_decay=1e-5)
 last_loss = 1.0; best_word_cos = 0.0; no_improve = 0; bridge_patience = 50
 
 t0 = time.time()
