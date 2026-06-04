@@ -204,12 +204,10 @@ for epoch in range(1, P2_EPOCHS + 1):
         idxs = perm[bs:be]
         pair_ids = torch.tensor([all_pairs[i] for i in idxs], device=DEVICE)
         with torch.no_grad():
-            # 获取P1内部字符向量→投影到128D输出空间
-            pos, content, full = p1.get_char_vectors(pair_ids)
-            real_c1 = p1.output_proj(full[:, 0, :])  # [b, 2048]→[b, 128]
-            real_c2 = p1.output_proj(full[:, 1, :])
-            real_c1 = F.normalize(real_c1, dim=-1)
-            real_c2 = F.normalize(real_c2, dim=-1)
+            # 获取P1内部字符向量→分阶段投影到128D
+            _, _, full = p1.get_char_vectors(pair_ids)
+            real_c1 = p1.project_char(full[:, 0, :])  # [b, 2048]→[b, 128]
+            real_c2 = p1.project_char(full[:, 1, :])
             word_vec = p1(pair_ids, last_loss=last_loss)  # [b, 128]
         pred_c1, pred_c2 = p2(word_vec)
         loss, sim1, sim2 = p2_loss(pred_c1, pred_c2, real_c1, real_c2)
@@ -442,15 +440,14 @@ print(f"{'#'*60}")
 
 @torch.no_grad()
 def get_char_vecs(text):
-    """获取128D字符向量(从P1内部2048D投影)"""
+    """获取128D字符向量(从P1内部2048D分阶段投影)"""
     vecs = []
     for c in text:
         if c not in char2idx: return None
         content = p1.char_content(torch.tensor([char2idx[c]], device=DEVICE))
         pos = p1.pos_encoder.pe[0:1]
         internal = torch.cat([pos[0], content[0]], dim=-1)  # 2048D
-        projected = p1.output_proj(internal)                  # →128D
-        vecs.append(F.normalize(projected, dim=-1))
+        vecs.append(p1.project_char(internal))                # →128D
     return torch.stack(vecs)
 
 bridge_data = []

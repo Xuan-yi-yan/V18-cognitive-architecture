@@ -95,8 +95,38 @@ class MetaLearningZone(nn.Module):
         return self.transform(explore_modulation)
 
 
+class StagedProjection(nn.Module):
+    """分阶段投影: 2048→1024(*/门控) → 128(+-融合)
+
+    阶段1 (*/缩放): 乘性门控选择重要信号, 减半到1024D
+    阶段2 (+-缩放): 双路径加性融合, 缩放到目标128D
+    """
+    def __init__(self, in_dim=2048, mid_dim=1024, out_dim=128):
+        super().__init__()
+        # 阶段1: 乘性门控 2048→1024
+        self.main_1 = nn.Linear(in_dim, mid_dim, bias=False)
+        self.gate_1 = nn.Linear(in_dim, mid_dim, bias=False)
+        self.norm_1 = nn.LayerNorm(mid_dim)
+
+        # 阶段2: 加性双路径 1024→128
+        self.path_a = nn.Linear(mid_dim, out_dim, bias=False)
+        self.path_b = nn.Linear(mid_dim, out_dim, bias=False)
+        self.norm_out = nn.LayerNorm(out_dim)
+
+    def forward(self, x):
+        # 阶段1: */缩放 — 门控选择 + 归一到球面
+        main = self.main_1(x)
+        gate = torch.sigmoid(self.gate_1(x))
+        h = self.norm_1(main * gate)          # [b, 1024]
+
+        # 阶段2: +-缩放 — 双路径融合到目标维度
+        out = self.path_a(h) + self.path_b(h)  # [b, 128]
+        out = self.norm_out(out)
+        return out
+
+
 class CharToWordModel(nn.Module):
-    """P1 v5.0: 2048D内部编码 + 512头 → Linear(2048→128) → 128D词向量输出"""
+    """P1 v5.1: 2048D内部编码 + 分阶段投影 → 128D词向量输出"""
     def __init__(self, num_chars, num_words):
         super().__init__()
         self.num_chars = num_chars
@@ -114,11 +144,11 @@ class CharToWordModel(nn.Module):
         self.explore_zone = ExplorationZone()
         self.meta_zone = MetaLearningZone()
 
-        # 输出投影: 2048D → 128D (非对称降维)
-        self.output_proj = nn.Linear(P1_CHAR_DIM, WORD_DIM, bias=False)  # 2048→128
+        # 分阶段投影: 2048D → 1024D(*/门控) → 128D(+-融合)
+        self.output_proj = StagedProjection(2048, 1024, 128)
 
-        # 词表: 128D (与下游统一, 同时也是交叉注意力的K,V源)
-        self.word_table = nn.Parameter(torch.randn(num_words, WORD_DIM) * 0.01)  # 128D
+        # 词表: 128D (与下游统一)
+        self.word_table = nn.Parameter(torch.randn(num_words, WORD_DIM) * 0.01)
 
     def get_char_vectors(self, char_ids):
         b = char_ids.shape[0]
@@ -127,6 +157,10 @@ class CharToWordModel(nn.Module):
         content = self.char_content(char_ids)          # [b, 2, 2040]
         full = torch.cat([pos, content], dim=-1)       # [b, 2, 2048]
         return pos, content, full
+
+    def project_char(self, char_internal):
+        """将内部2048D字符向量投影到128D输出空间"""
+        return F.normalize(self.output_proj(char_internal), dim=-1)
 
     def forward(self, char_ids, last_loss=1.0, return_details=False):
         pos, content, full = self.get_char_vectors(char_ids)
@@ -150,9 +184,8 @@ class CharToWordModel(nn.Module):
         # 拼接内部向量: [b, 2048]
         internal_vec = torch.cat([pos_out, internal_sem], dim=-1)
 
-        # 非对称投影: 2048D → 128D
-        word_vector = self.output_proj(internal_vec)               # [b, 128]
-        word_vector = F.normalize(word_vector, dim=-1)
+        # 分阶段投影: 2048D → 1024D(*/门控) → 128D(+-融合)
+        word_vector = self.project_char(internal_vec)              # [b, 128]
 
         if return_details:
             return word_vector, {

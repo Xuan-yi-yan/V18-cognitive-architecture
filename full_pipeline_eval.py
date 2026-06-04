@@ -82,8 +82,7 @@ def evaluate_sentence(text, expected_words, models):
         content = p1.char_content(torch.tensor([c2i[c]], device=DEVICE))
         pos = p1.pos_encoder.pe[0:1]
         internal = torch.cat([pos[0], content[0]], dim=-1)  # 2048D
-        projected = p1.output_proj(internal)                  # ->128D
-        char_vecs.append(F.normalize(projected, dim=-1))
+        char_vecs.append(p1.project_char(internal))          # ->128D (staged projection)
     cvs = torch.stack(char_vecs)
 
     # 2. P8: 字->句
