@@ -26,10 +26,22 @@ class WordToCharDecoder(nn.Module):
         self.c1_head = nn.Linear(hidden_dim, word_dim)
         self.c2_head = nn.Linear(hidden_dim, word_dim)
 
-    def forward(self, word_vector):
+        # 探索区 + 元学习区 (128D, 匹配word输出维度)
+        self.explore_state = nn.Parameter(torch.randn(word_dim) * 0.01)
+        self.meta_fc = nn.Sequential(
+            nn.Linear(word_dim, word_dim, bias=False), nn.Tanh())
+
+    def forward(self, word_vector, last_loss=1.0):
         h = self.shared(word_vector)  # [b, 256]
         c1 = self.c1_head(h)          # [b, 128]
         c2 = self.c2_head(h)          # [b, 128]
+
+        # 探索区 + 元学习调制 (与P5/P6/P8一致)
+        loss_factor = min(last_loss * 20.0, 1.0)
+        mod = self.meta_fc(self.explore_state * loss_factor)
+        c1 = c1 + mod.unsqueeze(0).expand(c1.shape[0], -1)
+        c2 = c2 + mod.unsqueeze(0).expand(c2.shape[0], -1)
+
         return c1, c2
 
 

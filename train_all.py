@@ -1,10 +1,21 @@
 """
-V18 全链路一键训练
-==================
-按序训练 P1→P2→P3→P5→P8+P6(bridge)→P7，每层带 Early Stopping
-用法: python train_all.py
+V18 全链路一键训练 (v5.1 stable)
+==================================
+按序训练 P1→P2→P3→P5→P8+P6(bridge)→P7
+用法: python train_all.py [--seed 789]
 """
-import torch, torch.nn.functional as F, time, os, sys, re, random
+import torch, torch.nn.functional as F, time, os, sys, re, random, argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--seed', type=int, default=None, help='Random seed')
+args = parser.parse_args()
+
+if args.seed is not None:
+    random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
+    print(f"[Seed] {args.seed}")
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from utils.config import *
@@ -208,7 +219,7 @@ for epoch in range(1, P2_EPOCHS + 1):
             real_c1 = p1.project_char(full[:, 0, :])
             real_c2 = p1.project_char(full[:, 1, :])
             word_vec = p1(pair_ids, last_loss=last_loss)
-        pred_c1, pred_c2 = p2(word_vec)
+        pred_c1, pred_c2 = p2(word_vec, last_loss=last_loss)
         loss, sim1, sim2 = p2_loss(pred_c1, pred_c2, real_c1, real_c2)
         opt.zero_grad(); loss.backward(); opt.step()
         epoch_loss += loss.item(); epoch_sim1 += sim1; epoch_sim2 += sim2; nb += 1
@@ -392,6 +403,7 @@ opt = torch.optim.Adam(p5.parameters(), lr=0.002, weight_decay=1e-5)
 last_loss = 1.0; best_gap = -999; no_improve = 0
 
 t0 = time.time()
+sent_buf = []  # 句子向量缓冲区, 用于多样性正则
 for epoch in range(1, P5_EPOCHS + 1):
     epoch_loss = 0.0; nb = 0
     for wv, roles in encoded_sents:
@@ -399,6 +411,21 @@ for epoch in range(1, P5_EPOCHS + 1):
         sv, sr = make_scrambled(wv, roles)
         scr = p5(sv, sr, last_loss=last_loss)
         loss, cos_c, cos_s = contrastive_loss(correct, scr.unsqueeze(0))
+
+        # 多样性正则: 每20个样本检查一次句子向量是否塌缩
+        sent_buf.append(correct.detach())
+        if len(sent_buf) >= 20:
+            buf = torch.stack(sent_buf)
+            # 成对余弦的平均值 — 如果所有句子相同, 这个值接近1.0
+            buf_n = F.normalize(buf, dim=-1)
+            pair_cos = torch.mm(buf_n, buf_n.T)
+            mask = 1 - torch.eye(len(buf), device=DEVICE)
+            avg_cos = (pair_cos * mask).sum() / (mask.sum() + 1e-8)
+            # 惩罚高相似度 (塌缩检测)
+            div_penalty = F.relu(avg_cos - 0.3) * 0.1
+            loss = loss + div_penalty
+            sent_buf = []
+
         opt.zero_grad(); loss.backward(); opt.step()
         epoch_loss += loss.item(); nb += 1; last_loss = loss.item()
 
