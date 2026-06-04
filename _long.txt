@@ -1,3 +1,0 @@
-[Data] 6000 sentences
-[Bridge] 6000 groups
-[P8+P6] 411,392 params
