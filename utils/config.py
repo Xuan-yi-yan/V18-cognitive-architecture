@@ -16,10 +16,10 @@ CHAR_DIM = POS_DIM + CONTENT_DIM    # 2048
 WORD_DIM = CHAR_DIM                  # 2048
 SENT_DIM = CHAR_DIM * 2             # 4096
 
-# === 交叉注意力 (64头, 2048D内部) ===
-ATTN_HEADS = 64
+# === 交叉注意力 (512头, 2048D内部) ===
+ATTN_HEADS = 512
 ATTN_DIM = CHAR_DIM                # 2048 (与模型维度统一)
-ATTN_HEAD_DIM = ATTN_DIM // ATTN_HEADS  # 32
+ATTN_HEAD_DIM = ATTN_DIM // ATTN_HEADS  # 4
 ATTN_DROPOUT = 0.1
 
 # === 调制 ===

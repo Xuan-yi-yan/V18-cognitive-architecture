@@ -38,15 +38,15 @@ class SubjectBindingModel(nn.Module):
         b, N = word_ids.shape[0], family_p1_vecs.shape[0]
         q_raw = self.p3_embed(word_ids)
 
-        q = self.word_q(q_raw).view(b, self.heads, self.head_dim).unsqueeze(2)
-        k = self.family_k(family_p1_vecs).view(N, self.heads, self.head_dim)
-        v = self.family_v(family_p1_vecs).view(N, self.heads, self.head_dim)
-        k = k.transpose(0, 1).unsqueeze(0).expand(b, -1, -1, -1)
-        v = v.transpose(0, 1).unsqueeze(0).expand(b, -1, -1, -1)
-
-        scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
+        q = self.word_q(q_raw).view(b, self.heads, self.head_dim)  # [b, h, d]
+        k = self.family_k(family_p1_vecs).view(N, self.heads, self.head_dim)  # [N, h, d]
+        v = self.family_v(family_p1_vecs).view(N, self.heads, self.head_dim)  # [N, h, d]
+        k = k.permute(1, 0, 2)  # [h, N, d]
+        v = v.permute(1, 0, 2)  # [h, N, d]
+        scores = torch.einsum('bhd,hnd->bhn', q, k) * self.scale  # [b, h, N]
         attn = F.softmax(scores, dim=-1)
-        attn_out = torch.matmul(attn, v).squeeze(2).contiguous().view(b, self.heads * self.head_dim)
+        attn_out = torch.einsum('bhn,hnd->bhd', attn, v)  # [b, h, d]
+        attn_out = attn_out.contiguous().view(b, self.heads * self.head_dim)
         mod = self.mod_proj(attn_out)
 
         loss_factor = min(last_loss * 20.0, 1.0)

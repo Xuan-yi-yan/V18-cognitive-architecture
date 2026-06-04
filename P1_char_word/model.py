@@ -47,17 +47,17 @@ class CrossAttention(nn.Module):
     def forward(self, char_vectors, word_table, return_weights=False):
         b = char_vectors.shape[0]; N = word_table.shape[0]
         q_input = torch.cat([char_vectors[:, 0, :], char_vectors[:, 1, :]], dim=-1)
-        q = self.W_q(q_input).view(b, self.heads, self.head_dim)
-        k = self.W_k(word_table).view(N, self.heads, self.head_dim)
-        v = self.W_v(word_table).view(N, self.heads, self.head_dim)
-        k = k.transpose(0,1).unsqueeze(0).expand(b,-1,-1,-1)
-        v = v.transpose(0,1).unsqueeze(0).expand(b,-1,-1,-1)
-        q = q.unsqueeze(2)
-        attn_scores = torch.matmul(q, k.transpose(-2,-1)) * self.scale
+        q = self.W_q(q_input).view(b, self.heads, self.head_dim)      # [b, h, d]
+        k = self.W_k(word_table).view(N, self.heads, self.head_dim)   # [N, h, d]
+        v = self.W_v(word_table).view(N, self.heads, self.head_dim)   # [N, h, d]
+        # einsum avoids expand: no [b,h,N,d] materialization
+        k = k.permute(1,0,2)  # [h, N, d]
+        v = v.permute(1,0,2)  # [h, N, d]
+        attn_scores = torch.einsum('bhd,hnd->bhn', q, k) * self.scale  # [b, h, N]
         attn_weights = F.softmax(attn_scores, dim=-1)
         attn_weights = self.dropout(attn_weights)
-        attn_out = torch.matmul(attn_weights, v)
-        attn_out = attn_out.squeeze(2).contiguous().view(b, self.d_model)
+        attn_out = torch.einsum('bhn,hnd->bhd', attn_weights, v)       # [b, h, d]
+        attn_out = attn_out.contiguous().view(b, self.d_model)
         output = self.W_o(attn_out)
         if return_weights: return output, attn_weights
         return output
