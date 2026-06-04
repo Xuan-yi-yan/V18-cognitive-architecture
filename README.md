@@ -62,31 +62,46 @@
 
 ## Layer Benchmarks
 
-### Current Best (v5.1: Staged Projection)
+### Current Stable (v7.1-stable, tag: `v7.1-stable`)
 
 | Layer | Task | Input → Output | Metric | Score |
 |:-----:|------|----------------|--------|------:|
 | **P1** | Char → Word | 2 chars → 128D word | Top-1 (6000 words) | **98.60%** |
-| **P2** | Word → Char | 128D word → 2 chars | Cosine Similarity | **88.57%** |
+| **P2** | Word → Char | 128D word → 2 chars | Cosine Similarity | **89.25%** |
 | **P3** | Attribute Binding | word → 7 categories | Classification | **100%** |
-| **P5** | Words → Sentence | n×128D → 256D | Order Gap | **1.24** |
-| **P6** | Sentence → Words | 256D → n×128D | Cosine (bridge) | **72.29%** |
-| **P7** | Cross-Sentence | A-words → B-sent | Cosine Similarity | **96.90%** |
+| **P5** | Words → Sentence | n×128D → 256D | Order Gap | **1.39** |
+| **P6** | Sentence → Words | 256D → n×128D | Cosine (bridge) | **78.19%** |
+| **P7** | Cross-Sentence | A-words → B-sent | Cosine Similarity | **97.90%** |
 | **P8** | Chars → Sentence | char seq → 256D | Cosine Similarity | ~99% |
-| **P8↔P5** | Char↔Word Sent Align | P8-sent vs P5-sent | Cosine | ~99% |
 
-### Cross-Version Comparison
+### Bridge Experiments (branch: `bridge-fix`)
 
-| Layer | v3.0 (128D) | v4.0 (2048D) | v5.0 (Linear) | **v5.1 (Staged)** | v5.2 (MLP) |
-|-------|:---:|:---:|:---:|:---:|:---:|
-| P1 | 99.89%¹ | 98.38% | 98.65% | **98.60%** | 98.73% |
-| P2 | 99.19%¹ | 81.04% | 83.57% | **88.57%** | 80.54% |
-| P3 | 100% | 17-100% | 100% | **100%** | 100% |
-| P5 | 1.15 | 0.60 | 1.25 | **1.24** | 1.52 |
-| Bridge | 96.19%¹ | 71.61% | 67.43% | **72.29%** | 71.71% |
-| P7 | 85.75% | 99.16% | 93.49% | **96.90%** | 93.31% |
+Multi-objective independent-target loss, 8000 sentences, 50 epochs:
 
-¹ 100-sentence training set only. v4.0+ uses 2000 sentences / 6000 words.
+| Epoch | word_cos | wc>.8 | wc>.9 | sent_self |
+|:-----:|:--------:|:-----:|:-----:|:---------:|
+| 1 | 79.62% | 46% | 0% | 0.995 |
+| 10 | 82.47% | 80% | 0% | 0.994 |
+| 20 | **83.76%** | **94%** | 0% | 0.991 |
+| 30 | 82.55% | 84% | 3% | 0.992 |
+| 40 | 83.08% | 85% | 1% | 0.991 |
+
+**Best: 83.76% @ epoch 20** (up from 72.29% on main branch)
+
+Data scaling results (simple sl+wl loss, 10 epochs):
+- 2000 sentences: 74.7% → declining
+- 4000 sentences: 78.6% → 80.2%
+- 6000 sentences: 79.5% → 81.2% ← data sweet spot
+- 8000 sentences: 78.7% → 79.9%
+
+Multi-objective loss formula:
+```python
+sent_align = (1 - sent_cos)²      # P8→P5 alignment, weight 5.0
+word_align = (1 - word_cos)²      # P6→target decoding, weight 1.0
+sent_div   = relu(sent_self-0.85)²  # P8 diversity, weight 0.1
+explore    = relu(0.02-explore_norm)² # explore preservation, weight 0.05
+total = Σ(weight × objective)
+```
 
 ### P3 Seven-Attribute Grammar
 
@@ -156,48 +171,40 @@ P1's word-composition logic (position-weighted fusion + cross-attention) is reus
 ### Requirements
 
 ```bash
-conda create -n v18 python=3.10
-conda activate v18
+conda create -n v18 python=3.10 && conda activate v18
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 pip install jieba
+git clone https://github.com/Xuan-yi-yan/V18-cognitive-architecture.git && cd V18-cognitive-architecture
 ```
 
-### One Command: Full Pipeline
+### Stable Baseline (main branch, tag v7.1-stable)
 
 ```bash
-# Step 1: Generate data (6000 words, 2000 sentences)
-python expand_data_v2.py
-
-# Step 2: Train all layers (P1→P2→P3→P5→P8+P6→P7)
-python train_all.py --seed 789
-
-# Step 3: Evaluate end-to-end
-python full_pipeline_eval.py
+git checkout main
+python expand_data_v2.py                    # 6000 words + 2000 sentences
+python train_all.py --seed 789              # P1→P2→P3→P5→P8+P6→P7 (~25 min)
+python full_pipeline_eval.py                # End-to-end Top-1/3/5/10
 ```
 
-### Quick Diagnostics
+### Bridge Experiments (bridge-fix branch)
 
 ```bash
-# P1+P2 seed screening (find downstream-friendly P1 projections)
-python seed_sweep.py
-
-# P2 deep diagnosis (100 epochs, log every 5)
-python p2_diagnose.py
+git checkout bridge-fix
+python seed_sweep.py                        # P1+P2 seed screening (3 seeds, ~20 min)
+python p2_diagnose.py                       # P2 deep diagnosis (100 epochs, log every 5)
+python bridge_diagnose.py                   # Bridge with joint fine-tuning
+python bridge_long_train.py                 # Bridge 50-epoch long training, multi-obj loss
 ```
 
 ### Expected Results (seed 789, RTX 5070 12GB)
 
-| Layer | Metric | Expected |
-|-------|--------|:--------:|
-| P1 | Top-1 | ~98.6% |
-| P2 | Cosine | ~89% |
-| P3 | Accuracy | 100% |
-| P5 | Gap | ~1.39 |
-| Bridge | Word Cos | ~78% |
-| P7 | Cosine | ~98% |
+| Script | When | Key Metric |
+|--------|:----:|------------|
+| `train_all.py --seed 789` | after ~25 min | P1=98.6%, P2=89.3%, P3=100%, P5=1.39, Bridge=78.2%, P7=97.9% |
+| `seed_sweep.py` | after ~20 min | 2/3 seeds P2>=90% |
+| `bridge_long_train.py` | after ~60 min | Bridge word_cos peak ~83.8% @ epoch 20 |
 
-**Total training time**: ~25 minutes  
-**GPU memory**: ~1.1GB (peak 5GB)
+**GPU memory**: ~1.1GB (train_all), peak ~5GB | **Model params**: P1=27.8M, P2=181K, total ~30M
 
 ---
 
