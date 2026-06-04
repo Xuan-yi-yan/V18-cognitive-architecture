@@ -19,17 +19,17 @@ from P7_cross_sent.model import CrossSentenceRouter
 # ============================================================
 # 配置 (可修改)
 # ============================================================
-WORD_LIST = os.path.join(DATA_DIR, "word_list_expanded.txt")
-SENT_FILE = os.path.join(BASE_DIR, "P5_sentence", "sentences_expanded.txt")
+WORD_LIST = os.path.join(DATA_DIR, "word_list_v2.txt")
+SENT_FILE = os.path.join(BASE_DIR, "P5_sentence", "sentences_v2.txt")
 
-P1_EPOCHS = 400
-P2_EPOCHS = 200
+P1_EPOCHS = 500     # 6000词需要更多轮
+P2_EPOCHS = 300
 P3_EPOCHS = 200
-P5_EPOCHS = 200
-BRIDGE_EPOCHS = 500
-P7_EPOCHS = 300
+P5_EPOCHS = 300
+BRIDGE_EPOCHS = 800   # 2000句需要更长训练
+P7_EPOCHS = 500
 
-PATIENCE = 25
+PATIENCE = 40
 
 print(f"{'='*60}")
 print(f"V18 全链路训练")

@@ -12,7 +12,7 @@ import math
 
 
 class CharToSent(nn.Module):
-    def __init__(self, char_dim=128, seq_pos_dim=4, sent_pos_dim=64, sent_sem_dim=192, max_len=12):
+    def __init__(self, char_dim=2048, seq_pos_dim=4, sent_pos_dim=1024, sent_sem_dim=3072, max_len=15):
         super().__init__()
         self.char_dim = char_dim
         self.sent_dim = sent_pos_dim + sent_sem_dim

@@ -10,7 +10,7 @@ import torch.nn.functional as F
 
 
 class SentToChars(nn.Module):
-    def __init__(self, sent_dim=256, char_dim=128, hidden_dim=256, max_chars=10):
+    def __init__(self, sent_dim=4096, char_dim=2048, hidden_dim=4096, max_chars=10):
         super().__init__()
         self.max_chars = max_chars
         self.char_dim = char_dim
