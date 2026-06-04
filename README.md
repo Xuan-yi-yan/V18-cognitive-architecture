@@ -142,33 +142,62 @@ P1's word-composition logic (position-weighted fusion + cross-attention) is reus
 
 ## Key Design Decisions
 
-1. **Asymmetric over uniform**: Full 2048D destroys decoder performance (P2: 81%, Bridge: 72%). Asymmetric 2048D→128D preserves encoder quality while keeping decoders viable.
-
-2. **Staged over linear**: Single Linear(2048→128) loses 5% on P2 vs staged projection. Two-stage reduction with gate+fusion preserves more structure.
-
-3. **Linear over nonlinear**: GELU/MLP projections (v5.2) degraded downstream performance. Sigmoid gating is the sweet spot — nonlinear enough to be selective, linear enough to be decodable.
-
-4. **Early stopping everywhere**: All layers exhibit overfitting collapse after peak. P1 peaks at epoch 35-55 then degrades. Best checkpoints saved automatically.
+1. **Asymmetric over uniform**: Full 2048D destroys decoder performance. Asymmetric 2048D→128D preserves encoder quality.
+2. **Staged over linear**: Single Linear(2048→128) loses 5% on P2 vs staged projection.
+3. **Linear over nonlinear**: GELU/MLP projections degraded downstream. Sigmoid gating is the sweet spot.
+4. **All layers have independent explore/meta zones**: P2 was missing — now fixed.
+5. **P5 diversity regularization**: Prevents sentence vector collapse during contrastive training.
+6. **F.normalize on P2 output**: Prevents norm collapse under cosine loss.
 
 ---
 
-## Quick Start
+## Reproduce · 复现指南
+
+### Requirements
 
 ```bash
-# Requirements
 conda create -n v18 python=3.10
 conda activate v18
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
-
-# Data preparation
-python expand_data_v2.py          # Generate 6000 words + 2000 sentences
-
-# One-click full pipeline
-python train_all.py               # P1→P2→P3→P5→P8+P6→P7
-
-# Evaluation
-python full_pipeline_eval.py      # End-to-end Top-1/3/5/10
+pip install jieba
 ```
+
+### One Command: Full Pipeline
+
+```bash
+# Step 1: Generate data (6000 words, 2000 sentences)
+python expand_data_v2.py
+
+# Step 2: Train all layers (P1→P2→P3→P5→P8+P6→P7)
+python train_all.py --seed 789
+
+# Step 3: Evaluate end-to-end
+python full_pipeline_eval.py
+```
+
+### Quick Diagnostics
+
+```bash
+# P1+P2 seed screening (find downstream-friendly P1 projections)
+python seed_sweep.py
+
+# P2 deep diagnosis (100 epochs, log every 5)
+python p2_diagnose.py
+```
+
+### Expected Results (seed 789, RTX 5070 12GB)
+
+| Layer | Metric | Expected |
+|-------|--------|:--------:|
+| P1 | Top-1 | ~98.6% |
+| P2 | Cosine | ~89% |
+| P3 | Accuracy | 100% |
+| P5 | Gap | ~1.39 |
+| Bridge | Word Cos | ~78% |
+| P7 | Cosine | ~98% |
+
+**Total training time**: ~25 minutes  
+**GPU memory**: ~1.1GB (peak 5GB)
 
 ---
 
