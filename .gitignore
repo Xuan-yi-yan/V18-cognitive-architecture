@@ -1,4 +1,4 @@
-# Checkpoint files (too large, use GitHub Releases or retrain)
+# Checkpoint files (too large, retrain or use GitHub Releases)
 checkpoints/
 *.pt
 
@@ -19,3 +19,7 @@ Thumbs.db
 
 # Conda
 .env/
+
+# Temp/output files
+_*.txt
+_*.pt

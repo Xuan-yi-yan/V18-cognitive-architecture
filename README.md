@@ -62,7 +62,7 @@
 
 ## Layer Benchmarks
 
-### Current Stable (v7.1-stable, tag: `v7.1-stable`)
+### Current Stable (v7.1-stable, tag `v7.1-stable`, branch `master`)
 
 | Layer | Task | Input → Output | Metric | Score |
 |:-----:|------|----------------|--------|------:|
@@ -172,15 +172,17 @@ P1's word-composition logic (position-weighted fusion + cross-attention) is reus
 
 ```bash
 conda create -n v18 python=3.10 && conda activate v18
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
-pip install jieba
+pip install -r requirements.txt
+# Or manually: pip install torch torchvision torchaudio jieba
 git clone https://github.com/Xuan-yi-yan/V18-cognitive-architecture.git && cd V18-cognitive-architecture
 ```
+
+> **Note**: Checkpoint files (`.pt`) are NOT included in the repository. Run `train_all.py` to generate them. Expected output path: `P1_char_word/checkpoints/`.
 
 ### Stable Baseline (main branch, tag v7.1-stable)
 
 ```bash
-git checkout main
+git checkout master
 python expand_data_v2.py                    # 6000 words + 2000 sentences
 python train_all.py --seed 789              # P1→P2→P3→P5→P8+P6→P7 (~25 min)
 python full_pipeline_eval.py                # End-to-end Top-1/3/5/10
