@@ -15,7 +15,7 @@ EPS = 1e-8
 
 
 class SubjectBindingModel(nn.Module):
-    def __init__(self, num_words, word_dim=2048, attn_dim=2048, heads=64):
+    def __init__(self, num_words, word_dim=128, attn_dim=256, heads=64):
         super().__init__()
         self.heads = heads
         self.head_dim = attn_dim // heads  # 4

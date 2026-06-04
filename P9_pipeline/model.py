@@ -8,8 +8,8 @@ import torch, torch.nn as nn, torch.nn.functional as F, math
 
 
 class UnifiedPipeline(nn.Module):
-    def __init__(self, char_dim=2048, word_dim=2048, sent_dim=4096, max_words=5,
-                 seq_pos_dim=4, hidden_dim=4096):
+    def __init__(self, char_dim=128, word_dim=128, sent_dim=256, max_words=5,
+                 seq_pos_dim=4, hidden_dim=256):
         super().__init__()
         self.max_words = max_words
         self.char_dim = char_dim

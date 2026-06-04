@@ -10,8 +10,8 @@ import math
 
 
 class SentenceSynthesis(nn.Module):
-    def __init__(self, word_dim=2048, pos_dim=8, sem_dim=2040,
-                 seq_pos_dim=4, sent_pos_dim=1024, sent_sem_dim=3072):
+    def __init__(self, word_dim=128, pos_dim=8, sem_dim=120,
+                 seq_pos_dim=4, sent_pos_dim=64, sent_sem_dim=192):
         super().__init__()
         self.pos_dim = pos_dim
         self.sem_dim = sem_dim

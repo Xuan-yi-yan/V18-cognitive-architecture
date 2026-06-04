@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 
 class WordToCharDecoder(nn.Module):
-    def __init__(self, word_dim=2048, hidden_dim=4096):
+    def __init__(self, word_dim=128, hidden_dim=256):
         super().__init__()
         self.word_dim = word_dim
         self.hidden_dim = hidden_dim

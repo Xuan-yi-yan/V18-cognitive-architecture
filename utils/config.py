@@ -1,4 +1,4 @@
-# utils/config.py — V18 v4.0 全链路2048D (16x扩容)
+# utils/config.py — V18 v5.0 非对称映射 (编码2048D → 解码128D)
 import torch, os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -9,33 +9,38 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# === 全链路统一维度 (2048D) ===
-POS_DIM = 8                # 位置编码 (不变)
-CONTENT_DIM = 2040         # 语义内容
-CHAR_DIM = POS_DIM + CONTENT_DIM    # 2048
-WORD_DIM = CHAR_DIM                  # 2048
-SENT_DIM = CHAR_DIM * 2             # 4096
+# === P1 内部高维编码 (2048D + 512头) ===
+P1_CONTENT_DIM = 2040
+P1_CHAR_DIM = 8 + P1_CONTENT_DIM       # 2048
+P1_HEADS = 512
+P1_HEAD_DIM = P1_CHAR_DIM // P1_HEADS   # 4
 
-# === 交叉注意力 (512头, 2048D内部) ===
-ATTN_HEADS = 512
-ATTN_DIM = CHAR_DIM                # 2048 (与模型维度统一)
+# === 下游统一维度 (128D + 64头) ===
+POS_DIM = 8
+CONTENT_DIM = 120
+CHAR_DIM = POS_DIM + CONTENT_DIM        # 128
+WORD_DIM = CHAR_DIM                      # 128
+SENT_DIM = CHAR_DIM * 2                 # 256
+
+# === 下游交叉注意力 ===
+ATTN_HEADS = 64
+ATTN_DIM = 256
 ATTN_HEAD_DIM = ATTN_DIM // ATTN_HEADS  # 4
 ATTN_DROPOUT = 0.1
 
 # === 调制 ===
-MOD_DIM = WORD_DIM                # 2048
+P1_MOD_DIM = P1_CHAR_DIM               # 2048
+MOD_DIM = WORD_DIM                      # 128
 
 # === 解码器隐层 ===
-HIDDEN_DIM = 4096
+HIDDEN_DIM = 256
 
 # === 训练 ===
 LEARNING_RATE = 0.005
-BATCH_SIZE = 2000                # 大批次, 控制单轮计算压力
-DEFAULT_EPOCHS = 500
+BATCH_SIZE = 200
+DEFAULT_EPOCHS = 300
 DISPLAY_INTERVAL = 20
 PEARSON_EPSILON = 1e-8
 WEIGHT_DECAY = 1e-5
 DISPLAY_MODE = "average"
-
-# === Early Stopping ===
-PATIENCE = 30
+PATIENCE = 25

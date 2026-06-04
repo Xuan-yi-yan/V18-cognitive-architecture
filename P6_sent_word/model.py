@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 
 class SentToWordsDecoder(nn.Module):
-    def __init__(self, sent_dim=4096, word_dim=2048, hidden_dim=4096, max_words=3):
+    def __init__(self, sent_dim=256, word_dim=128, hidden_dim=256, max_words=3):
         super().__init__()
         self.sent_dim = sent_dim
         self.word_dim = word_dim

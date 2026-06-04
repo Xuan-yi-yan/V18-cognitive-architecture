@@ -1,16 +1,17 @@
 """
-P1 字符→词语 (全链路128D统一版)
-===============================
-内部128D = 8D位置 + 120D语义, 64头×256D交叉注意力
-输出128D词向量, 无投影层 — 直接兼容下游P2-P9
+P1 字符→词语 (v5.0 非对称: 内部2048D+512头 → 输出128D)
+========================================================
+编码: 2048D内部语义, 512头×2048D交叉注意力
+输出: Linear(2048→128)投影 → 128D词向量 → 兼容下游P2-P9
 """
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
 
-from utils.config import (POS_DIM, CONTENT_DIM, CHAR_DIM, WORD_DIM, MOD_DIM,
-                          ATTN_HEADS, ATTN_DIM, ATTN_HEAD_DIM, ATTN_DROPOUT)
+from utils.config import (POS_DIM, CONTENT_DIM, CHAR_DIM, WORD_DIM,
+                          P1_CONTENT_DIM, P1_CHAR_DIM, P1_HEADS, P1_HEAD_DIM, P1_MOD_DIM,
+                          ATTN_HEADS, ATTN_DIM, ATTN_HEAD_DIM, ATTN_DROPOUT, MOD_DIM)
 
 
 class PositionEncoding(nn.Module):
@@ -28,36 +29,34 @@ class PositionEncoding(nn.Module):
 
 
 class CrossAttention(nn.Module):
-    """64头×256D: Q=两字符(256D), K,V=词表(128D) → 128D输出"""
-    def __init__(self, char_dim=CHAR_DIM, word_dim=WORD_DIM, d_model=ATTN_DIM, heads=ATTN_HEADS):
+    """512头×2048D Q,K,V投影 → 2048D输出 (einsum, 无expand)"""
+    def __init__(self, char_dim=P1_CHAR_DIM, word_dim=WORD_DIM, heads=P1_HEADS):
         super().__init__()
         self.char_dim = char_dim
         self.word_dim = word_dim
-        self.d_model = d_model
         self.heads = heads
-        self.head_dim = ATTN_HEAD_DIM
+        self.head_dim = P1_HEAD_DIM  # 4
         self.scale = self.head_dim ** -0.5
 
-        self.W_q = nn.Linear(char_dim * 2, d_model, bias=False)   # 256→256
-        self.W_k = nn.Linear(word_dim, d_model, bias=False)        # 128→256
-        self.W_v = nn.Linear(word_dim, d_model, bias=False)        # 128→256
-        self.W_o = nn.Linear(d_model, word_dim, bias=False)        # 256→128
+        self.W_q = nn.Linear(char_dim * 2, char_dim, bias=False)   # 4096→2048
+        self.W_k = nn.Linear(word_dim, char_dim, bias=False)        # 128→2048
+        self.W_v = nn.Linear(word_dim, char_dim, bias=False)        # 128→2048
+        self.W_o = nn.Linear(char_dim, char_dim, bias=False)        # 2048→2048
         self.dropout = nn.Dropout(ATTN_DROPOUT)
 
     def forward(self, char_vectors, word_table, return_weights=False):
         b = char_vectors.shape[0]; N = word_table.shape[0]
         q_input = torch.cat([char_vectors[:, 0, :], char_vectors[:, 1, :]], dim=-1)
-        q = self.W_q(q_input).view(b, self.heads, self.head_dim)      # [b, h, d]
-        k = self.W_k(word_table).view(N, self.heads, self.head_dim)   # [N, h, d]
-        v = self.W_v(word_table).view(N, self.heads, self.head_dim)   # [N, h, d]
-        # einsum avoids expand: no [b,h,N,d] materialization
-        k = k.permute(1,0,2)  # [h, N, d]
-        v = v.permute(1,0,2)  # [h, N, d]
-        attn_scores = torch.einsum('bhd,hnd->bhn', q, k) * self.scale  # [b, h, N]
+        q = self.W_q(q_input).view(b, self.heads, self.head_dim)    # [b, 512, 4]
+        k = self.W_k(word_table).view(N, self.heads, self.head_dim) # [N, 512, 4]
+        v = self.W_v(word_table).view(N, self.heads, self.head_dim) # [N, 512, 4]
+        k = k.permute(1, 0, 2)  # [512, N, 4]
+        v = v.permute(1, 0, 2)  # [512, N, 4]
+        attn_scores = torch.einsum('bhd,hnd->bhn', q, k) * self.scale  # [b, 512, N]
         attn_weights = F.softmax(attn_scores, dim=-1)
         attn_weights = self.dropout(attn_weights)
-        attn_out = torch.einsum('bhn,hnd->bhd', attn_weights, v)       # [b, h, d]
-        attn_out = attn_out.contiguous().view(b, self.d_model)
+        attn_out = torch.einsum('bhn,hnd->bhd', attn_weights, v)       # [b, 512, 4]
+        attn_out = attn_out.contiguous().view(b, self.char_dim)
         output = self.W_o(attn_out)
         if return_weights: return output, attn_weights
         return output
@@ -70,7 +69,7 @@ class PosFusion(nn.Module):
 
 
 class ExplorationZone(nn.Module):
-    def __init__(self, dim=MOD_DIM):
+    def __init__(self, dim=P1_MOD_DIM):
         super().__init__()
         self.pos_basis = nn.Parameter(torch.randn(dim) * 0.02)
         self.neg_basis = nn.Parameter(torch.randn(dim) * 0.02)
@@ -86,7 +85,7 @@ class ExplorationZone(nn.Module):
 
 
 class MetaLearningZone(nn.Module):
-    def __init__(self, dim=MOD_DIM):
+    def __init__(self, dim=P1_MOD_DIM):
         super().__init__()
         self.transform = nn.Sequential(
             nn.Linear(dim, dim, bias=False), nn.Tanh(),
@@ -97,50 +96,63 @@ class MetaLearningZone(nn.Module):
 
 
 class CharToWordModel(nn.Module):
-    """P1: 128D内部语义 + 64头×256D注意力 → 128D词向量 (无投影层)"""
+    """P1 v5.0: 2048D内部编码 + 512头 → Linear(2048→128) → 128D词向量输出"""
     def __init__(self, num_chars, num_words):
         super().__init__()
         self.num_chars = num_chars
         self.num_words = num_words
-        self.char_content = nn.Embedding(num_chars, CONTENT_DIM)  # 120D
-        nn.init.xavier_uniform_(self.char_content.weight)
-        self.word_table = nn.Parameter(torch.randn(num_words, WORD_DIM) * 0.01)  # 128D
 
+        # 内部高维编码
+        self.char_content = nn.Embedding(num_chars, P1_CONTENT_DIM)  # 2040D
+        nn.init.xavier_uniform_(self.char_content.weight)
         self.pos_encoder = PositionEncoding()
+
+        # 512头交叉注意力: Q=字符对(4096D), K,V=词表(128D) → 2048D输出
         self.cross_attn = CrossAttention()
-        self.pos_fusion = PosFusion()
+
+        # 调制链 (2048D)
         self.explore_zone = ExplorationZone()
         self.meta_zone = MetaLearningZone()
+
+        # 输出投影: 2048D → 128D (非对称降维)
+        self.output_proj = nn.Linear(P1_CHAR_DIM, WORD_DIM, bias=False)  # 2048→128
+
+        # 词表: 128D (与下游统一, 同时也是交叉注意力的K,V源)
+        self.word_table = nn.Parameter(torch.randn(num_words, WORD_DIM) * 0.01)  # 128D
 
     def get_char_vectors(self, char_ids):
         b = char_ids.shape[0]
         positions = torch.arange(2, device=char_ids.device).unsqueeze(0).repeat(b, 1)
-        pos = self.pos_encoder(positions)       # [b, 2, 8]
-        content = self.char_content(char_ids)   # [b, 2, 120]
-        full = torch.cat([pos, content], dim=-1)  # [b, 2, 128]
+        pos = self.pos_encoder(positions)              # [b, 2, 8]
+        content = self.char_content(char_ids)          # [b, 2, 2040]
+        full = torch.cat([pos, content], dim=-1)       # [b, 2, 2048]
         return pos, content, full
 
     def forward(self, char_ids, last_loss=1.0, return_details=False):
         pos, content, full = self.get_char_vectors(char_ids)
 
-        # 交叉注意力: Q=字符对, K,V=词表
-        attn_out, attn_weights = self.cross_attn(full, self.word_table, return_weights=True)  # [b, 128]
+        # 交叉注意力: Q(2048D内部), K,V(128D词表) → 2048D
+        attn_out, attn_weights = self.cross_attn(full, self.word_table, return_weights=True)
 
-        # 调制链
+        # 调制链 (2048D)
         explore_mod = self.explore_zone(last_loss)
         meta_mod = self.meta_zone(explore_mod)
-        meta_exp = meta_mod.unsqueeze(0).expand(pos.shape[0], -1)
-        modulated_attn = attn_out + meta_exp  # [b, 128]
+        modulated_attn = attn_out + meta_mod.unsqueeze(0).expand(pos.shape[0], -1)
 
         # 位置融合: 8D
-        pos_out = self.pos_fusion(pos)  # [b, 8]
+        pos_out = self.pos_fusion(pos)
 
-        # 语义融合: 120D (字符内容求和 + 注意力语义区)
-        base_sem = content[:, 0, :] + content[:, 1, :]         # [b, 120]
-        attn_sem = modulated_attn[:, POS_DIM:]                  # [b, 120]
-        content_out = F.normalize(base_sem + attn_sem, dim=-1)  # [b, 120]
+        # 语义融合: 2040D内部 → 投影到120D
+        base_sem = content[:, 0, :] + content[:, 1, :]            # [b, 2040]
+        attn_sem = modulated_attn[:, POS_DIM:]                     # [b, 2040]
+        internal_sem = F.normalize(base_sem + attn_sem, dim=-1)    # [b, 2040]
 
-        word_vector = torch.cat([pos_out, content_out], dim=-1)  # [b, 128]
+        # 拼接内部向量: [b, 2048]
+        internal_vec = torch.cat([pos_out, internal_sem], dim=-1)
+
+        # 非对称投影: 2048D → 128D
+        word_vector = self.output_proj(internal_vec)               # [b, 128]
+        word_vector = F.normalize(word_vector, dim=-1)
 
         if return_details:
             return word_vector, {
@@ -148,7 +160,7 @@ class CharToWordModel(nn.Module):
                 "attn_weights": attn_weights, "attn_out_raw": attn_out,
                 "modulated_attn": modulated_attn,
                 "explore_mod": explore_mod, "meta_mod": meta_mod,
-                "pos_out": pos_out, "content_out": content_out,
+                "pos_out": pos_out, "content_out": internal_sem,
             }
         return word_vector
 
@@ -163,7 +175,12 @@ class CharToWordModel(nn.Module):
     @torch.no_grad()
     def predict_word_ids(self, char_ids):
         self.eval()
-        pos, content, full = self.get_char_vectors(char_ids)
+        _, _, full = self.get_char_vectors(char_ids)
         _, attn_weights = self.cross_attn(full, self.word_table, return_weights=True)
-        avg_attn = attn_weights.squeeze(2).mean(dim=1)
+        avg_attn = attn_weights.squeeze(2).mean(dim=1) if attn_weights.dim() > 3 else attn_weights.mean(dim=1)
         return avg_attn.argmax(dim=-1), avg_attn
+
+    # PosFusion (复用, 输出8D位置)
+    def pos_fusion(self, pos):
+        out = pos[:, 0, :] + pos[:, 1, :]
+        return F.normalize(out, dim=-1)

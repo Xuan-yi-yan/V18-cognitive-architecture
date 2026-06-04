@@ -12,7 +12,7 @@ import math
 
 
 class CrossSentenceRouter(nn.Module):
-    def __init__(self, word_dim=2048, attn_dim=2048, sent_dim=4096, heads=64):
+    def __init__(self, word_dim=128, attn_dim=256, sent_dim=256, heads=64):
         super().__init__()
         self.word_dim = word_dim
         self.attn_dim = attn_dim

@@ -22,14 +22,18 @@ from P7_cross_sent.model import CrossSentenceRouter
 WORD_LIST = os.path.join(DATA_DIR, "word_list_v2.txt")
 SENT_FILE = os.path.join(BASE_DIR, "P5_sentence", "sentences_v2.txt")
 
-P1_EPOCHS = 500     # 6000词需要更多轮
-P2_EPOCHS = 300
+# P1 非对称: 内部2048D+512头, 需要控制batch
+P1_MINI_BATCH = 64
+P1_ACCUM = 25        # 64×25≈1600 per update
+P1_EPOCHS = 300
+
+P2_EPOCHS = 200
 P3_EPOCHS = 200
 P5_EPOCHS = 300
-BRIDGE_EPOCHS = 800   # 2000句需要更长训练
-P7_EPOCHS = 500
+BRIDGE_EPOCHS = 500
+P7_EPOCHS = 300
 
-PATIENCE = 40
+PATIENCE = 30
 
 print(f"{'='*60}")
 print(f"V18 全链路训练")
@@ -91,14 +95,15 @@ sentences = load_sentences(SENT_FILE)
 print(f"[句子] {len(sentences)}句")
 
 # ============================================================
-# P1: 字符 → 词语
+# P1: 字符 → 词语 (非对称: 2048D内部+512头 → 128D输出)
 # ============================================================
 print(f"\n{'#'*60}")
-print(f"# P1: 字符→词语 ({P1_EPOCHS}epochs)")
+print(f"# P1: 字符→词语 ({P1_EPOCHS}epochs, batch={P1_MINI_BATCH}×{P1_ACCUM})")
 print(f"{'#'*60}")
 
 p1 = CharToWordModel(NUM_CHARS, NUM_WORDS).to(DEVICE)
-print(f"[P1] 参数: {sum(p.numel() for p in p1.parameters()):,}")
+n_p1 = sum(p.numel() for p in p1.parameters())
+print(f"[P1] {n_p1:,} params ({n_p1*4/1024/1024:.0f}MB), 内部2048D+{P1_HEADS}头→输出128D")
 
 opt = torch.optim.Adam(p1.parameters(), lr=0.005, weight_decay=WEIGHT_DECAY)
 last_loss = 1.0; best_top1 = 0.0; no_improve = 0
@@ -114,54 +119,68 @@ def pearson_loss(pred, target):
 def eval_p1():
     p1.eval()
     ref = p1.get_all_reference_vectors(DEVICE)
-    correct_top1 = 0; total = len(all_pairs)
-    for i in range(total):
-        p = torch.tensor([all_pairs[i]], device=DEVICE)
-        pred = p1(p, last_loss=0.0)
-        sims = F.cosine_similarity(pred, ref)
-        if torch.argsort(sims, descending=True)[0].item() == i: correct_top1 += 1
+    ref_n = F.normalize(ref, dim=-1)
+    correct = 0; total = len(all_pairs)
+    for i in range(0, total, 100):
+        end = min(i+100, total)
+        batch_p = torch.tensor([all_pairs[j] for j in range(i, end)], device=DEVICE)
+        preds_n = F.normalize(p1(batch_p, last_loss=0.0), dim=-1)
+        sims = torch.mm(preds_n, ref_n.T)
+        correct += (sims.argmax(dim=-1) == torch.arange(i, end, device=DEVICE)).sum().item()
     p1.train()
-    return correct_top1 / total
+    return correct / total
 
 t0 = time.time()
 for epoch in range(1, P1_EPOCHS + 1):
     epoch_loss = 0.0; nb = 0
+    opt.zero_grad()
     perm = torch.randperm(NUM_WORDS)
-    for bs in range(0, NUM_WORDS, BATCH_SIZE):
-        be = min(bs + BATCH_SIZE, NUM_WORDS)
-        idxs = perm[bs:be]
+
+    for acc_step in range(P1_ACCUM):
+        start = acc_step * P1_MINI_BATCH
+        end = min(start + P1_MINI_BATCH, NUM_WORDS)
+        if start >= NUM_WORDS: break
+        idxs = perm[start:end]
+
         pair_ids = torch.tensor([all_pairs[i] for i in idxs], device=DEVICE)
         word_ids = torch.tensor([i for i in idxs], device=DEVICE)
+
         pred, _ = p1(pair_ids, last_loss=last_loss, return_details=True)
         target = p1.get_word_target(word_ids)
-        loss = pearson_loss(pred, target)
-        opt.zero_grad(); loss.backward()
-        torch.nn.utils.clip_grad_norm_(p1.parameters(), 1.0)
-        opt.step()
-        epoch_loss += loss.item(); nb += 1; last_loss = loss.item()
+        loss = pearson_loss(pred, target) / P1_ACCUM
+        loss.backward()
+        epoch_loss += loss.item() * P1_ACCUM; nb += 1
+        last_loss = loss.item() * P1_ACCUM
 
-    if epoch % 10 == 0 or epoch == 1:
+    torch.nn.utils.clip_grad_norm_(p1.parameters(), 1.0)
+    opt.step()
+    opt.zero_grad()
+    torch.cuda.empty_cache()
+
+    if epoch % 5 == 0 or epoch == 1:
         top1 = eval_p1()
         if top1 > best_top1:
             best_top1 = top1; no_improve = 0
             torch.save({"epoch": epoch, "model_state_dict": p1.state_dict(),
                        "num_chars": NUM_CHARS, "num_words": NUM_WORDS,
                        "char2idx": char2idx, "idx2char": idx2char,
-                       "word2idx": word2idx, "idx2word": idx2word,
-                       "top1": top1},
+                       "word2idx": word2idx, "idx2word": idx2word, "top1": top1},
                        os.path.join(SAVE_DIR, "P1_best.pt"))
-        else: no_improve += 10
-        print(f"  Epoch {epoch:4d} | Loss={epoch_loss/nb:.6f} | Top-1={top1:.4%} | best={best_top1:.4%}")
+        else: no_improve += 5
+        elapsed = time.time() - t0
+        a = torch.cuda.memory_allocated(DEVICE)/1024**2
+        print(f"  E{epoch:4d} | Loss={epoch_loss/max(nb,1):.6f} | Top-1={top1:.4%} | best={best_top1:.4%} | GPU={a:.0f}MB | {elapsed:.0f}s")
         if no_improve >= PATIENCE:
-            print(f"  Early stop @ epoch {epoch}")
+            print(f"  Early stop @ {epoch}")
             break
 
-print(f"[P1] DONE: best Top-1={best_top1:.4%} | {time.time()-t0:.0f}s")
+print(f"[P1] DONE: best={best_top1:.4%} | {time.time()-t0:.0f}s")
 
 # 加载最佳P1并冻结
 ckpt = torch.load(os.path.join(SAVE_DIR, "P1_best.pt"), map_location=DEVICE)
 p1.load_state_dict(ckpt["model_state_dict"])
 for p in p1.parameters(): p.requires_grad = False; p1.eval()
+del opt; torch.cuda.empty_cache()
 
 # ============================================================
 # P2: 词语 → 字符
@@ -185,9 +204,13 @@ for epoch in range(1, P2_EPOCHS + 1):
         idxs = perm[bs:be]
         pair_ids = torch.tensor([all_pairs[i] for i in idxs], device=DEVICE)
         with torch.no_grad():
-            _, _, full = p1.get_char_vectors(pair_ids)
-            real_c1 = full[:, 0, :]; real_c2 = full[:, 1, :]
-            word_vec = p1(pair_ids, last_loss=last_loss)
+            # 获取P1内部字符向量→投影到128D输出空间
+            pos, content, full = p1.get_char_vectors(pair_ids)
+            real_c1 = p1.output_proj(full[:, 0, :])  # [b, 2048]→[b, 128]
+            real_c2 = p1.output_proj(full[:, 1, :])
+            real_c1 = F.normalize(real_c1, dim=-1)
+            real_c2 = F.normalize(real_c2, dim=-1)
+            word_vec = p1(pair_ids, last_loss=last_loss)  # [b, 128]
         pred_c1, pred_c2 = p2(word_vec)
         loss, sim1, sim2 = p2_loss(pred_c1, pred_c2, real_c1, real_c2)
         opt.zero_grad(); loss.backward(); opt.step()
@@ -419,12 +442,15 @@ print(f"{'#'*60}")
 
 @torch.no_grad()
 def get_char_vecs(text):
+    """获取128D字符向量(从P1内部2048D投影)"""
     vecs = []
     for c in text:
         if c not in char2idx: return None
         content = p1.char_content(torch.tensor([char2idx[c]], device=DEVICE))
         pos = p1.pos_encoder.pe[0:1]
-        vecs.append(torch.cat([pos[0], content[0]]))
+        internal = torch.cat([pos[0], content[0]], dim=-1)  # 2048D
+        projected = p1.output_proj(internal)                  # →128D
+        vecs.append(F.normalize(projected, dim=-1))
     return torch.stack(vecs)
 
 bridge_data = []
