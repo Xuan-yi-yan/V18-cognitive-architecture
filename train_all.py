@@ -225,6 +225,7 @@ for epoch in range(1, P2_EPOCHS + 1):
         explore_norm = p2.explore_state.norm()
         loss = loss + 0.001 * F.relu(0.1 - explore_norm)
         opt.zero_grad(); loss.backward(); opt.step()
+        torch.cuda.empty_cache()
         epoch_loss += loss.item(); epoch_sim1 += sim1; epoch_sim2 += sim2; nb += 1
         last_loss = loss.item()
 
@@ -352,6 +353,7 @@ for attr in ATTRS:
                 loss, _ = margin_loss(out, family_proto, is_pos[bs:be], q_raw=q_raw)
                 opt.zero_grad(); loss.backward(); opt.step()
                 el += loss.item(); nb += 1; last_loss = loss.item()
+                torch.cuda.empty_cache()
 
         if epoch % 50 == 0 or epoch == 1:
             model.eval()
@@ -431,6 +433,7 @@ for epoch in range(1, P5_EPOCHS + 1):
 
         opt.zero_grad(); loss.backward(); opt.step()
         epoch_loss += loss.item(); nb += 1; last_loss = loss.item()
+        torch.cuda.empty_cache()
 
     if epoch % 10 == 0 or epoch == 1:
         gaps = []
@@ -597,6 +600,7 @@ if len(p7_pairs) > 0:
                     loss = (1.0 - cos).mean()
                     opt.zero_grad(); loss.backward(); opt.step()
                     el += loss.item(); nb += 1; last_loss = loss.item()
+                torch.cuda.empty_cache()
 
                 if epoch % 100 == 0 or epoch == 1:
                     p7.eval()

@@ -77,8 +77,7 @@ for ep in range(1,MAX_EPOCH+1):
         opt.zero_grad(); loss.backward(); opt.step()
         el1+=L1; el2+=L2; nb+=1; ll=loss.item()
         del pids,full,rc1,rc2,wv,pc1,pc2,loss
-        # 每批强制释放, 防止累积到共享显存
-        if bi%2==0: torch.cuda.empty_cache()
+        torch.cuda.empty_cache()  # 逐批硬清
         if bi%3==0 or bi==n_batches-1:
             a=torch.cuda.memory_allocated(DEVICE)/1024**2
             print(f'  batch {bi+1:2d}/{n_batches} | L1={L1:.4f} L2={L2:.4f} | GPU={a:.0f}MB',flush=True)

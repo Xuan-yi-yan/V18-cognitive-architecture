@@ -26,10 +26,11 @@ class WordToCharDecoder(nn.Module):
         self.c1_head = nn.Linear(hidden_dim, word_dim)
         self.c2_head = nn.Linear(hidden_dim, word_dim)
 
-        # 探索区 + 元学习区 (128D, 匹配word输出维度)
-        self.explore_state = nn.Parameter(torch.randn(word_dim) * 1.0)  # 开局调制值万级
+        # 探索区 + 元学习区 (128D, P2自控调制强度)
+        self.explore_state = nn.Parameter(torch.randn(word_dim) * 1.0)
         self.meta_fc = nn.Sequential(
-            nn.Linear(word_dim, word_dim, bias=False))  # 去Tanh, 调制值不再受限于[-1,1]
+            nn.Linear(word_dim, word_dim, bias=False))
+        self.mod_strength = nn.Parameter(torch.tensor(0.05))  # P2自己学需要多强
 
     def forward(self, word_vector, last_loss=1.0):
         h = self.shared(word_vector)  # [b, 256]
@@ -40,9 +41,10 @@ class WordToCharDecoder(nn.Module):
         c1 = F.normalize(c1, dim=-1)
         c2 = F.normalize(c2, dim=-1)
 
-        # 探索区 + 元学习区 — 无损全量注入
+        # 探索区 + 元学习区 — P2自己学会调制该多强
         loss_factor = min(last_loss * 20.0, 1.0)
         mod = self.meta_fc(self.explore_state * loss_factor)
+        mod = mod * self.mod_strength  # 可学习缩放
         c1 = F.normalize(c1 + mod.unsqueeze(0).expand(c1.shape[0], -1), dim=-1)
         c2 = F.normalize(c2 + mod.unsqueeze(0).expand(c2.shape[0], -1), dim=-1)
 
