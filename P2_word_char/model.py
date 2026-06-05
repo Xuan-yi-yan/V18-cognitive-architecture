@@ -40,11 +40,13 @@ class WordToCharDecoder(nn.Module):
         c1 = F.normalize(c1, dim=-1)
         c2 = F.normalize(c2, dim=-1)
 
-        # 探索区 + 元学习调制 — 方向级微调, 不改变归一化后幅度
+        # 探索区 + 元学习调制 — 不加缩放，保底0.05防止消失
         loss_factor = min(last_loss * 20.0, 1.0)
-        mod = self.meta_fc(self.explore_state * loss_factor)
-        c1 = F.normalize(c1 + 0.05 * mod.unsqueeze(0).expand(c1.shape[0], -1), dim=-1)
-        c2 = F.normalize(c2 + 0.05 * mod.unsqueeze(0).expand(c2.shape[0], -1), dim=-1)
+        base_mod = self.meta_fc(self.explore_state * loss_factor)
+        # 保底: 调制强度至少0.05, 防止探索区完全失效
+        mod_floor = 0.05 * F.normalize(base_mod, dim=-1) if base_mod.norm() < 0.05 else base_mod
+        c1 = F.normalize(c1 + mod_floor.unsqueeze(0).expand(c1.shape[0], -1), dim=-1)
+        c2 = F.normalize(c2 + mod_floor.unsqueeze(0).expand(c2.shape[0], -1), dim=-1)
 
         return c1, c2
 
