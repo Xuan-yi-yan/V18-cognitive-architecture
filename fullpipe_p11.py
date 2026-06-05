@@ -2,6 +2,9 @@
 import torch, torch.nn.functional as F, time, os, sys, re, random
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from utils.config import *
+from utils.logger import get_log, info, epoch as log_epoch
+
+log = get_log("fullpipe_p11")
 from P1_char_word.model import CharToWordModel
 from P2_word_char.model import WordToCharDecoder
 from P3_word_attr.model import SubjectBindingModel, margin_loss
@@ -163,9 +166,11 @@ for ep in range(1,501):
         p8.train(); p6.train(); aw=sum(wc)/len(wc)
         if aw>bw: bw=aw
         print(f'BR E{ep:3d} word_cos={aw:.4%} best={bw:.4%} | {time.time()-t0:.0f}s')
+        log_epoch(ep, BRIDGE_word_cos=f"{aw:.4%}", best=f"{bw:.4%}")
 torch.save({'p8':p8.state_dict(),'p6':p6.state_dict(),'word_cos':bw},os.path.join(SD,'fullpipe_bridge.pt'))
 del opt,p8,p6; torch.cuda.empty_cache()
 print(f'BRIDGE DONE: best={bw:.4%}')
+info(f"BRIDGE_COMPLETE best={bw:.4%}")
 
 # === P7 ===
 print('\n--- P7 ---')

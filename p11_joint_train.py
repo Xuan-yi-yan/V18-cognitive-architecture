@@ -2,8 +2,11 @@
 import torch, torch.nn.functional as F, time, os, sys, re, random, argparse
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from utils.config import *
+from utils.logger import get_log, info, metric, epoch as log_epoch, batch as log_batch
 from P1_char_word.model import CharToWordModel
 from P2_word_char.model import WordToCharDecoder
+
+log = get_log("p11_joint")
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--epochs',type=int,default=300,help='训练轮数')
@@ -128,9 +131,11 @@ for ep in range(1,args.epochs+1):
         ms=p2.mod_strength.item(); es_n=p2.explore_state.norm().item()
         mw=p2.meta_fc[0].weight.norm().item()
         print(f'\nP11 E{ep:3d} | P2_test={p2_test:.4%} {t} | L1={el_p1/nb:.4f} L2={el_p2/nb:.4f} | best={best_p2:.4%}@{best_ep} | LR={lr:.6f} | mod_s={ms:.4f} exp_n={es_n:.1f} meta_w={mw:.1f} | {time.time()-t0:.0f}s\n')
+        log_epoch(ep, P2_test=f"{p2_test:.4%}", L1=f"{el_p1/nb:.4f}", L2=f"{el_p2/nb:.4f}", best=f"{best_p2:.4%}", LR=f"{lr:.6f}")
         if ep==best_ep:  # 刚刷新best时保存
             torch.save({'p1_proj':p1.output_proj.state_dict(),'p2':p2.state_dict(),
                        'p2_test':p2_test,'epoch':ep},os.path.join(SD,'P11_joint_best.pt'))
         if es_c>=100: print(f'CONVERGED @ {ep}'); break
 
 print(f'\nP11 DONE: best_p2={best_p2:.4%} @ epoch {best_ep}')
+info(f"P11_COMPLETE best_p2={best_p2:.4%} epoch={best_ep}")

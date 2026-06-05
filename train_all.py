@@ -5,6 +5,10 @@ V18 全链路一键训练 (v5.1 stable)
 用法: python train_all.py [--seed 789]
 """
 import torch, torch.nn.functional as F, time, os, sys, re, random, argparse
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from utils.logger import get_log, info, epoch as log_epoch
+
+log = get_log("train_all")
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=None, help='Random seed')
@@ -186,6 +190,7 @@ for epoch in range(1, P1_EPOCHS + 1):
             break
 
 print(f"[P1] DONE: best={best_top1:.4%} | {time.time()-t0:.0f}s")
+log.info(f"P1_DONE Top-1={best_top1:.4%}")
 
 # 加载最佳P1, 完全冻结 (投影层在Bridge阶段才解冻)
 ckpt = torch.load(os.path.join(SAVE_DIR, "P1_best.pt"), map_location=DEVICE)
@@ -238,6 +243,7 @@ for epoch in range(1, P2_EPOCHS + 1):
         print(f"  Epoch {epoch:4d} | Loss={epoch_loss/nb:.6f} | cos={avg_sim:.4%} | best={best_p2_cos:.4%}")
 
 print(f"[P2] DONE: best cos={best_p2_cos:.4%} | {time.time()-t0:.0f}s")
+log.info(f"P2_DONE cos={best_p2_cos:.4%}")
 
 # ============================================================
 # P3: 七属性绑定
@@ -458,6 +464,7 @@ for epoch in range(1, P5_EPOCHS + 1):
             break
 
 print(f"[P5] DONE: best gap={best_gap:.4f} | {time.time()-t0:.0f}s")
+log.info(f"P5_DONE gap={best_gap:.4f}")
 
 # 冻结P5
 p5.load_state_dict(torch.load(os.path.join(SAVE_DIR, "P5_best.pt"), map_location=DEVICE)["model_state_dict"])
@@ -552,6 +559,7 @@ for epoch in range(1, BRIDGE_EPOCHS + 1):
             break
 
 print(f"[P8+P6] DONE: best word_cos={best_word_cos:.4f} | {time.time()-t0:.0f}s")
+log.info(f"BRIDGE_DONE word_cos={best_word_cos:.4f}")
 
 # ============================================================
 # P7: 跨句路由

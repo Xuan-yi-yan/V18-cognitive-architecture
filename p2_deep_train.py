@@ -2,6 +2,9 @@
 import torch, torch.nn.functional as F, time, os, sys, re, random
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from utils.config import *
+from utils.logger import get_log, info, epoch as log_epoch
+
+log = get_log("p2_deep")
 from P1_char_word.model import CharToWordModel
 from P2_word_char.model import WordToCharDecoder
 
