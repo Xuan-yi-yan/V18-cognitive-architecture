@@ -123,7 +123,7 @@ GPU peak: 5GB for full 6000-word vocabulary with batch=64
 
 Two learnable zones modulate every forward pass:
 - **Exploration Zone**: Loss-driven basis vectors scaled by current training loss
-- **Meta-Learning Zone**: 2-layer Tanh network for structured perturbation injection
+- **Meta-Learning Zone**: learnable modulation network. In v8.0, the final Tanh clamp was removed to preserve modulation magnitude.
 
 ### 5. Position-Semantic Decomposition
 
@@ -152,7 +152,7 @@ P1's word-composition logic (position-weighted fusion + cross-attention) is reus
 
 ```bash
 git clone https://github.com/Xuan-yi-yan/V18-cognitive-architecture.git
-cd V18-cognitive-architecture
+cd V18-cognitive-architecture && git checkout v8.0
 conda create -n v18 python=3.10 && conda activate v18
 pip install -r requirements.txt
 ```
