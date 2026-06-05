@@ -71,8 +71,8 @@ class PosFusion(nn.Module):
 class ExplorationZone(nn.Module):
     def __init__(self, dim=P1_MOD_DIM):
         super().__init__()
-        self.pos_basis = nn.Parameter(torch.randn(dim) * 0.02)
-        self.neg_basis = nn.Parameter(torch.randn(dim) * 0.02)
+        self.pos_basis = nn.Parameter(torch.randn(dim) * 1.0)
+        self.neg_basis = nn.Parameter(torch.randn(dim) * 1.0)
         self.strength_mlp = nn.Sequential(
             nn.Linear(1, 16), nn.ReLU(), nn.Linear(16, 2), nn.Tanh())
 
@@ -88,8 +88,8 @@ class MetaLearningZone(nn.Module):
     def __init__(self, dim=P1_MOD_DIM):
         super().__init__()
         self.transform = nn.Sequential(
-            nn.Linear(dim, dim, bias=False), nn.Tanh(),
-            nn.Linear(dim, dim, bias=False), nn.Tanh())
+            nn.Linear(dim, dim, bias=False), nn.Identity(),
+            nn.Linear(dim, dim, bias=False), nn.Identity())
 
     def forward(self, explore_modulation):
         return self.transform(explore_modulation)

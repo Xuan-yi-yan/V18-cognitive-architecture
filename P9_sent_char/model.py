@@ -25,9 +25,9 @@ class SentToChars(nn.Module):
             nn.Linear(hidden_dim, char_dim) for _ in range(max_chars)
         ])
 
-        self.explore_state = nn.Parameter(torch.randn(char_dim) * 0.01)
+        self.explore_state = nn.Parameter(torch.randn(char_dim) * 1.0)
         self.meta_fc = nn.Sequential(
-            nn.Linear(char_dim, char_dim, bias=False), nn.Tanh())
+            nn.Linear(char_dim, char_dim, bias=False))
 
     def forward(self, sent_vec, n_chars, last_loss=1.0):
         b = sent_vec.shape[0]
