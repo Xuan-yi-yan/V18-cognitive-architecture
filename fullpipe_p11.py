@@ -122,43 +122,12 @@ for attr in ATTRS:
     del m,opt; torch.cuda.empty_cache()
     print(f'P3-{attr}: {ba:.2%}')
 
-# === P5 ===
-print('\n--- P5 ---')
-enc_sents=[]
-for w,r in sentences:
-    vs=[ew(x) for x in w]
-    if None not in vs: enc_sents.append((torch.stack(vs),torch.tensor(r,device=DEVICE)))
-def scr(wv,rl):
-    idx=list(range(len(rl))); random.shuffle(idx)
-    return torch.stack([wv[i] for i in idx]),torch.tensor([rl[i] for i in idx],device=DEVICE)
+# === P5: load from checkpoint (no retraining needed) ===
+print('\n--- P5 (loaded from checkpoint) ---')
 p5=SentenceSynthesis().to(DEVICE)
-opt=torch.optim.Adam(p5.parameters(),lr=0.002,weight_decay=1e-5)
-ll=1.0; bg=-999; sb=[]
-t0=time.time()
-for ep in range(1,301):
-    el=0.0; nb=0; random.shuffle(enc_sents)
-    for wv,rl in enc_sents:
-        c=p5(wv,rl,last_loss=ll); sv,sr=scr(wv,rl); s=p5(sv,sr,last_loss=ll)
-        loss,_,_=contrastive_loss(c,s.unsqueeze(0))
-        sb.append(c.detach())
-        if len(sb)>=20:
-            buf=torch.stack(sb); bn=F.normalize(buf,dim=-1)
-            pc=torch.mm(bn,bn.T); mk=1-torch.eye(len(buf),device=DEVICE)
-            loss=loss+F.relu((pc*mk).sum()/mk.sum()-0.3)*0.1; sb=[]
-        opt.zero_grad(); loss.backward(); opt.step(); torch.cuda.empty_cache()
-        el+=loss.item(); nb+=1; ll=loss.item()
-    if ep%10==0:
-        gaps=[]
-        for wv,rl in enc_sents[:30]:
-            c=p5(wv,rl,last_loss=0.0); sv,sr=scr(wv,rl); s=p5(sv,sr,last_loss=0.0)
-            cc=F.cosine_similarity(c.detach(),c.detach(),dim=-1).item()
-            cs=F.cosine_similarity(s,c.detach(),dim=-1).item(); gaps.append(cc-cs)
-        ag=sum(gaps)/len(gaps)
-        if ag>bg: bg=ag
-        print(f'P5 E{ep:3d} gap={ag:.4f} best={bg:.4f} | {time.time()-t0:.0f}s')
+p5.load_state_dict(torch.load(os.path.join(SD,'P5_best.pt'),map_location=DEVICE)['model_state_dict'])
 for p in p5.parameters(): p.requires_grad=False; p5.eval()
-del opt; torch.cuda.empty_cache()
-print(f'P5 DONE: best_gap={bg:.4f}')
+print(f'P5 loaded: gap={torch.load(os.path.join(SD,"P5_best.pt"),map_location=DEVICE).get("avg_gap","?")}')
 
 # === Bridge ===
 print('\n--- Bridge ---')
@@ -245,7 +214,7 @@ print(f'\n===== FULL PIPELINE (P11投影) =====')
 print(f'P1: 98.6% (P11投影优化)')
 print(f'P2: {p11.get("p2_test",0):.4%} (P11联合)')
 for a,v in p3_accs.items(): print(f'P3-{a}: {v:.2%}')
-print(f'P5: gap={bg:.4f}')
+print(f'P5: loaded from checkpoint')
 print(f'Bridge: {bw:.4%}')
 print(f'P7: {bp7:.4%}')
 a=torch.cuda.memory_allocated(DEVICE)/1024**2
