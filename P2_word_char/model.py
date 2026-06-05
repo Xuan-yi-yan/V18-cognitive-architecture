@@ -29,24 +29,22 @@ class WordToCharDecoder(nn.Module):
         # 探索区 + 元学习区 (128D, 匹配word输出维度)
         self.explore_state = nn.Parameter(torch.randn(word_dim) * 0.01)
         self.meta_fc = nn.Sequential(
-            nn.Linear(word_dim, word_dim, bias=False), nn.Tanh())
+            nn.Linear(word_dim, word_dim, bias=False))  # 去Tanh, 调制值不再受限于[-1,1]
 
     def forward(self, word_vector, last_loss=1.0):
         h = self.shared(word_vector)  # [b, 256]
         c1 = self.c1_head(h)          # [b, 128]
         c2 = self.c2_head(h)          # [b, 128]
 
-        # Normalize: 防输出幅度塌缩 + 余弦损失只用方向
+        # Normalize: 余弦损失只用方向
         c1 = F.normalize(c1, dim=-1)
         c2 = F.normalize(c2, dim=-1)
 
-        # 探索区 + 元学习调制 — 不加缩放，保底0.05防止消失
+        # 探索区 + 元学习区 — 无损全量注入
         loss_factor = min(last_loss * 20.0, 1.0)
-        base_mod = self.meta_fc(self.explore_state * loss_factor)
-        # 保底: 调制强度至少0.05, 防止探索区完全失效
-        mod_floor = 0.05 * F.normalize(base_mod, dim=-1) if base_mod.norm() < 0.05 else base_mod
-        c1 = F.normalize(c1 + mod_floor.unsqueeze(0).expand(c1.shape[0], -1), dim=-1)
-        c2 = F.normalize(c2 + mod_floor.unsqueeze(0).expand(c2.shape[0], -1), dim=-1)
+        mod = self.meta_fc(self.explore_state * loss_factor)
+        c1 = F.normalize(c1 + mod.unsqueeze(0).expand(c1.shape[0], -1), dim=-1)
+        c2 = F.normalize(c2 + mod.unsqueeze(0).expand(c2.shape[0], -1), dim=-1)
 
         return c1, c2
 

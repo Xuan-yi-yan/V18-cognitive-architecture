@@ -30,7 +30,7 @@ class SentToWordsDecoder(nn.Module):
 
         self.explore_state = nn.Parameter(torch.randn(word_dim) * 0.01)
         self.meta_fc = nn.Sequential(
-            nn.Linear(word_dim, word_dim, bias=False), nn.Tanh())
+            nn.Linear(word_dim, word_dim, bias=False))
 
     def forward(self, sent_vec, last_loss=1.0):
         b = sent_vec.shape[0]

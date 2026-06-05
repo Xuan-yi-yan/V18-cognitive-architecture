@@ -29,7 +29,7 @@ class CrossSentenceRouter(nn.Module):
 
         self.explore_state = nn.Parameter(torch.randn(sent_dim) * 0.01)
         self.meta_fc = nn.Sequential(
-            nn.Linear(sent_dim, sent_dim, bias=False), nn.Tanh())
+            nn.Linear(sent_dim, sent_dim, bias=False))
 
     def forward(self, A_word_vecs, B_word_table, last_loss=1.0):
         nA = A_word_vecs.shape[0]

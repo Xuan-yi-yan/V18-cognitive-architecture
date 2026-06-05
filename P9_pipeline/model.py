@@ -26,7 +26,7 @@ class UnifiedPipeline(nn.Module):
         self.word_heads = nn.ModuleList([nn.Linear(hidden_dim, word_dim) for _ in range(max_words)])
 
         self.explore = nn.Parameter(torch.randn(sent_dim) * 0.01)
-        self.meta = nn.Sequential(nn.Linear(sent_dim, sent_dim, bias=False), nn.Tanh())
+        self.meta = nn.Sequential(nn.Linear(sent_dim, sent_dim, bias=False))
 
     def _build_pe(self, max_len, dim):
         pe = torch.zeros(max_len, dim)

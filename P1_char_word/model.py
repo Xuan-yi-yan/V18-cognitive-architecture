@@ -88,8 +88,8 @@ class MetaLearningZone(nn.Module):
     def __init__(self, dim=P1_MOD_DIM):
         super().__init__()
         self.transform = nn.Sequential(
-            nn.Linear(dim, dim, bias=False), nn.Tanh(),
-            nn.Linear(dim, dim, bias=False), nn.Tanh())
+            nn.Linear(dim, dim, bias=False), nn.Identity(),
+            nn.Linear(dim, dim, bias=False), nn.Identity())
 
     def forward(self, explore_modulation):
         return self.transform(explore_modulation)

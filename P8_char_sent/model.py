@@ -25,8 +25,7 @@ class CharToSent(nn.Module):
 
         self.explore_state = nn.Parameter(torch.randn(sent_pos_dim + sent_sem_dim) * 0.01)
         self.meta_fc = nn.Sequential(
-            nn.Linear(sent_pos_dim + sent_sem_dim, sent_pos_dim + sent_sem_dim, bias=False),
-            nn.Tanh())
+            nn.Linear(sent_pos_dim + sent_sem_dim, sent_pos_dim + sent_sem_dim, bias=False))
 
     def _build_pe(self, max_len, dim):
         pe = torch.zeros(max_len, dim)

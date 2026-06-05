@@ -31,7 +31,7 @@ class SubjectBindingModel(nn.Module):
 
         self.explore_state = nn.Parameter(torch.randn(word_dim) * 0.01)
         self.meta_fc = nn.Sequential(
-            nn.Linear(word_dim, word_dim, bias=False), nn.Tanh())
+            nn.Linear(word_dim, word_dim, bias=False))
 
     def forward(self, word_ids, family_p1_vecs, last_loss=1.0):
         word_ids = word_ids.long()
