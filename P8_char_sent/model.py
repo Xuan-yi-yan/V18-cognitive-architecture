@@ -23,7 +23,7 @@ class CharToSent(nn.Module):
         self.pos_fuse = nn.Linear(char_dim + seq_pos_dim, sent_pos_dim, bias=False)  # 132→64
         self.sem_fuse = nn.Linear(char_dim, sent_sem_dim, bias=False)                # 128→192
 
-        self.explore_state = nn.Parameter(torch.randn(sent_pos_dim + sent_sem_dim) * 0.01)
+        self.explore_state = nn.Parameter(torch.randn(sent_pos_dim + sent_sem_dim) * 1.0)
         self.meta_fc = nn.Sequential(
             nn.Linear(sent_pos_dim + sent_sem_dim, sent_pos_dim + sent_sem_dim, bias=False))
 

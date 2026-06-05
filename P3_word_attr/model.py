@@ -29,7 +29,7 @@ class SubjectBindingModel(nn.Module):
         self.family_v = nn.Linear(word_dim, attn_dim, bias=False)
         self.mod_proj = nn.Linear(attn_dim, word_dim, bias=False)
 
-        self.explore_state = nn.Parameter(torch.randn(word_dim) * 0.01)
+        self.explore_state = nn.Parameter(torch.randn(word_dim) * 1.0)
         self.meta_fc = nn.Sequential(
             nn.Linear(word_dim, word_dim, bias=False))
 

@@ -71,8 +71,8 @@ class PosFusion(nn.Module):
 class ExplorationZone(nn.Module):
     def __init__(self, dim=P1_MOD_DIM):
         super().__init__()
-        self.pos_basis = nn.Parameter(torch.randn(dim) * 0.02)
-        self.neg_basis = nn.Parameter(torch.randn(dim) * 0.02)
+        self.pos_basis = nn.Parameter(torch.randn(dim) * 1.0)
+        self.neg_basis = nn.Parameter(torch.randn(dim) * 1.0)
         self.strength_mlp = nn.Sequential(
             nn.Linear(1, 16), nn.ReLU(), nn.Linear(16, 2), nn.Tanh())
 

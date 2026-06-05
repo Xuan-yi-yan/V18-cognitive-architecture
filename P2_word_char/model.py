@@ -27,7 +27,7 @@ class WordToCharDecoder(nn.Module):
         self.c2_head = nn.Linear(hidden_dim, word_dim)
 
         # 探索区 + 元学习区 (128D, 匹配word输出维度)
-        self.explore_state = nn.Parameter(torch.randn(word_dim) * 0.01)
+        self.explore_state = nn.Parameter(torch.randn(word_dim) * 1.0)  # 开局调制值万级
         self.meta_fc = nn.Sequential(
             nn.Linear(word_dim, word_dim, bias=False))  # 去Tanh, 调制值不再受限于[-1,1]
 
