@@ -62,7 +62,7 @@
 
 ## Layer Benchmarks
 
-### v8.0 Final (tag `v8.0`, branch `master`)
+### v8.0.1 Final (tag `v8.0.1`, branch `master`)
 
 | Layer | Task | Metric | Solo Best | P11 Joint |
 |:-----:|------|--------|:---------:|:---------:|
@@ -152,7 +152,7 @@ P1's word-composition logic (position-weighted fusion + cross-attention) is reus
 
 ```bash
 git clone https://github.com/Xuan-yi-yan/V18-cognitive-architecture.git
-cd V18-cognitive-architecture && git checkout v8.0
+cd V18-cognitive-architecture && git checkout v8.0.1
 conda create -n v18 python=3.10 && conda activate v18
 pip install -r requirements.txt
 ```
