@@ -2,7 +2,7 @@
 
 **A fully transparent, from-scratch Chinese language understanding system.**
 
-[![Paper](https://img.shields.io/badge/HuggingFace-Model_Card-blue)](https://huggingface.co/)
+[![Model](https://img.shields.io/badge/HuggingFace-V19_Model-blue)](https://huggingface.co/MIHUJIOUY/V19-cognitive-engine)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 ![Params](https://img.shields.io/badge/params-4.7M-green)
 ![GPU](https://img.shields.io/badge/GPU-141MB-orange)
