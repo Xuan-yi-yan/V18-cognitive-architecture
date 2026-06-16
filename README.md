@@ -1,254 +1,153 @@
-# V18 Cognitive Architecture
+# V19 White-box Chinese Cognition Engine
 
-**Asymmetric white-box neural pipeline for Chinese language understanding.**
+**A fully transparent, from-scratch Chinese language understanding system.**
 
-2048D internal encoding (512-head cross-attention) → staged projection to 128D → 9-layer bidirectional pipeline from characters to sentences.
+[![Paper](https://img.shields.io/badge/HuggingFace-Model_Card-blue)](https://huggingface.co/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+![Params](https://img.shields.io/badge/params-4.7M-green)
+![GPU](https://img.shields.io/badge/GPU-141MB-orange)
 
----
-
-## Architecture Diagram
-
-```
-                        ┌──────────────────────────────────────────┐
-                        │           V18 ASYMMETRIC CORE            │
-                        │   P1: 2048D + 512 heads (high-D encode) │
-                        │   ↓ StagedProjection: 2048→1024→128     │
-                        │   P2-P9: 128D + 64 heads (low-D decode) │
-                        └──────────────────────────────────────────┘
-
-    CHAR LEVEL                   WORD LEVEL              SENTENCE LEVEL
-    ─────────                    ──────────              ─────────────
-
-    ┌──────────┐                ┌──────────┐            ┌──────────┐
-    │  c1 c2   │──── P1 ───────▶│ w_vec    │─── P5 ────▶│ s_vec    │─── P7 ──▶ cross-sent
-    │ (2048D)  │◀─── P2 ───────│ (128D)   │◀── P6 ─────│ (256D)   │           routing
-    └────┬─────┘                └────┬─────┘            └────┬─────┘
-         │                           │                       │
-         │         ┌─────────────────┤                       │
-         │         │   P3: 7-attr    │                       │
-         │         │   binding       │                       │
-         │         │ subj/verb/obj   │                       │
-         │         │ adj/adv/comp    │                       │
-         │         │    func         │                       │
-         │         └─────────────────┘                       │
-         │                                                  │
-         └─────────────── P8 ──────────────────────────────▶│
-         ◀───────────────────── P9 ─────────────────────────┘
-
-    P1↔P2: char↔word roundtrip    P5↔P6: word↔sentence roundtrip
-    P8↔P9: char↔sentence roundtrip  P7: cross-sentence routing
-```
-
-### Data Flow Example
-
-```
-  "学生学习知识"
-       │
-       ▼
-  [学, 习, 生, 学, 习, 知, 识]              ← 7 raw characters
-       │
-       ├── P1(2048D) ──▶ [学生, 学习, 知识]  ← 3 word vectors (128D)
-       │                      │
-       │                      ├── P3 ──▶ subj=学生, verb=学习, obj=知识
-       │                      │
-       │                      └── P5 ──▶ 0.88·subj + 0.96·verb - 1.00·obj → 256D sent
-       │
-       ├── P8 ──▶ 256D sentence vector (direct from chars, cos=0.99 vs P5)
-       │
-       └── P9: chars → 256D sent + 3×128D words (one-shot)
-```
+> Built in 16 days. No black boxes. No pretrained embeddings. Every weight has a reason.
 
 ---
 
-## Layer Benchmarks
+## What is this?
 
-### v8.0.1 Final (tag `v8.0.1`, branch `master`)
+V19 is a white-box Chinese cognition engine. Unlike LLMs that hide reasoning behind billions of opaque parameters, V19 makes every linguistic decision **traceable and auditable**:
 
-| Layer | Task | Metric | Solo Best | P11 Joint |
-|:-----:|------|--------|:---------:|:---------:|
-| **P1** | Char → Word | Top-1 | **98.60%** | 97.60% |
-| **P2** | Word → Char | Cosine | 80.70% | **95.95%** |
-| **P3** | Attribute Binding | Accuracy | **100%** | 100% |
-| **P5** | Words → Sentence | Gap | **1.39** | — |
-| **P6** | Sentence → Words (Bridge) | Cosine | 78.19% | **96.31%** |
-| **P7** | Cross-Sentence | Cosine | **97.90%** | — |
+- You can inspect **which attributes** were assigned to each word
+- You can see **which words routed to which sentence positions**
+- The gate system tells you **which decoding dimensions are active**
+- No GPU needed for inference — runs on CPU at 71 sentences/second
 
-**P11 is the key innovation**: Joint training of P1's 2048→128D projection with P2 feedback. This unlocks P2 from 80.7% → 95.95% and Bridge from 78.2% → 96.3% — the projection reversibility bottleneck is solved.
+## Architecture
 
-### Key Architecture Features
-
-- **Asymmetric**: P1: 2048D/512 heads internal → 128D output (16:1 dim ratio, 8:1 head ratio)
-- **Staged projection**: \*/\ (multiplicative gate 2048→1024) → +- (additive fusion 1024→128)
-- **Einsum attention**: Zero-expand cross-attention, GPU peak 5GB at batch=64
-- **All layers have independent explore/meta zones** (Tanh removed, no scaling)
-- **Multi-objective independent-target loss** (each sub-goal has its own target)
-
-### P3 Seven-Attribute Grammar
-
-| Attribute | English | Family Size | v5.1 Accuracy |
-|:---:|---------|:-----------:|:------------:|
-| 主语 | Subject | 269 | 100% |
-| 谓语 | Predicate | 207 | 100% |
-| 宾语 | Object | 305 | 100% |
-| 定语 | Adjective | 13 | 100% |
-| 状语 | Adverbial | 10 | 100% |
-| 补语 | Complement | 37 | 100% |
-| 虚词 | Function word | 7 | 100% |
-
----
-
-## Technical Highlights
-
-### 1. Asymmetric Architecture (Core Innovation)
-
-P1 internally encodes at 2048D with 512 attention heads for rich word discrimination, then projects to 128D via a staged projection for downstream compatibility. Encoder:decoder ratio = 16:1 (dims) and 8:1 (heads).
-
-### 2. Staged Projection (v5.1, Best)
-
-Two-stage dimension reduction that preserves decoder-navigable structure:
 ```
-Stage 1 (*/gate): 2048D → sigmoid gate → 1024D (selective signal preservation)
-Stage 2 (+-fuse): 1024D → path_a + path_b → 128D (additive feature fusion)
+Input Sentence (A)
+    │
+    ▼
+┌─────────────────────────────────┐
+│  P1  Char→Word Encoder  [96K]   │  Frozen. Cross-attention over 6000-word table.
+│      2-char → 128D vector       │  Batch encoding, ~141MB GPU.
+└─────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────┐
+│  P7  Cross-sentence Router      │  32 heads × 4D. P5-style ±superposition.
+│      [226K, 128→256 sent_vec]   │  Learnable positional weights instead of mean pooling.
+└─────────────────────────────────┘
+    │
+    ├── word_out[nA, 128]  (diagnostics)
+    └── sent_vec[256]      (to context cache)
+    │
+    ▼
+┌─────────────────────────────────┐
+│  Explore + Meta  [101K]         │  12D loss → 256D signal → sigmoid gate
+│      Gate control over P6       │  Learns when to open/close decode dimensions
+└─────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────┐
+│  P6  Sent→Word Decoder  [4.37M] │  128 independent heads × Linear(256,128)
+│      Position Embedding V6      │  h + pos_embed[i] per head — naturally anti-collapse
+└─────────────────────────────────┘
+    │
+    ▼
+Output Words (B)
 ```
-
-### 3. 512-Head Einsum Attention
-
-Memory-efficient cross-attention using einsum instead of tensor expansion:
-```
-einsum('bhd,hnd->bhn', q, k)  — no [batch, heads, vocab, dim] materialization
-GPU peak: 5GB for full 6000-word vocabulary with batch=64
-```
-
-### 4. White-Box Modulation Chain
-
-Two learnable zones modulate every forward pass:
-- **Exploration Zone**: Loss-driven basis vectors scaled by current training loss
-- **Meta-Learning Zone**: learnable modulation network. In v8.0, the final Tanh clamp was removed to preserve modulation magnitude.
-
-### 5. Position-Semantic Decomposition
-
-Every vector decomposes into 8D position (frozen sin/cos) + 120D semantic (learned), enabling direct inspection and cosine comparison.
-
-### 6. Fractal Recursion
-
-P1's word-composition logic (position-weighted fusion + cross-attention) is reused identically in P5 for sentence composition.
-
----
 
 ## Key Design Decisions
 
-1. **Asymmetric over uniform**: Full 2048D destroys decoder performance. Asymmetric 2048D→128D preserves encoder quality.
-2. **Staged over linear**: Single Linear(2048→128) loses 5% on P2 vs staged projection.
-3. **Linear over nonlinear**: GELU/MLP projections degraded downstream. Sigmoid gating is the sweet spot.
-4. **All layers have independent explore/meta zones**: P2 was missing — now fixed.
-5. **P5 diversity regularization**: Prevents sentence vector collapse during contrastive training.
-6. **F.normalize on P2 output**: Prevents norm collapse under cosine loss.
+| # | Decision | Rationale |
+|---|----------|-----------|
+| 1 | Position embedding (V6) | Each head gets `h + pos_embed[i]` — unique starting point prevents mode collapse without rep_pen |
+| 2 | Explore→Meta gate | Loss flows through explore network into meta gate; gate learns *when* to modulate, not just *how much* |
+| 3 | P5-style ± superposition | `word_out * learnable_pos_weights → sum → sent_proj` preserves per-word information (vs. mean pooling) |
+| 4 | 128-dim (not 512) | Qwen identified quadratic explosion trap; 128D is sufficient for Chinese characters |
+| 5 | Strict 3-way split | 80/10/10 train/test/exam; exam set locked on disk until final eval |
+| 6 | Public data only | HuggingFace (53K) + MuCGEC (1K); fully reproducible, no proprietary data |
 
----
+## Benchmarks (V18, 875K params)
 
-## Reproduce · 复现指南
+| Metric | Score |
+|--------|-------|
+| Word Accuracy | **92.4%** |
+| Exact Match | 76.3% |
+| Rouge-L F1 | 93.2 |
+| Per-word Cosine | 0.96 |
+| Inference Speed | 14ms/sent (71 sent/s) |
 
-### Requirements
+*V19 (4.7M params, 128 heads) training in progress — targeting 95%+ word accuracy on 52K public dataset.*
 
-```bash
-git clone https://github.com/Xuan-yi-yan/V18-cognitive-architecture.git
-cd V18-cognitive-architecture && git checkout v8.0.1
-conda create -n v18 python=3.10 && conda activate v18
-pip install -r requirements.txt
-```
+## Bugs We Slain (the hard way)
 
-GPU: RTX 5070 12GB recommended. CPU works but slow. Checkpoints NOT in repo — generated by training.
+1. **Mode Collapse** — Every position output the same word. Fixed with gating + diversity loss (P7 v1→v8, 8 iterations)
+2. **Gate Symmetry Lock** — All 256 gate dims had std=0.0001. Fixed by correcting zero-initialization in explore_net, act, and bias
+3. **Gradient Chain Break** — `.item()` in loss severed the explore→meta gradient. 240 epochs wasted before discovery
+4. **Repetition Collapse** — P6 decoded same high-frequency word 16 times. Fixed with Position Embedding V6 — the simplest solution after 5 failed approaches
+5. **CUDA OOM** — P1 full cross-attention over 6000 words → 25.76GiB. Fixed with 50-word batching + `torch.no_grad()`
+6. **Space-character Collapse** — HF data had spaces between chars; model learned to output spaces. Fixed with `ord(c) > 32` filter
+7. **sent_vec Information Loss** — Mean pooling smoothed away per-word differences. Fixed with learnable ±weighted sum
 
-### Step 1: Baseline Pipeline (~25 min)
+## Training Data
 
-```bash
-python expand_data_v2.py              # 6000 words + 2000 sentences
-python train_all.py --seed 789        # Train P1→P2→P3→P5→Bridge→P7
-```
+| Source | Pairs | Domain |
+|--------|-------|--------|
+| HuggingFace `shibing624/chinese_text_correction` | 53K | News, legal, medical, automotive |
+| MuCGEC (NAACL 2022) | 1K | Academic Chinese correction |
 
-Expected: P1=98.6%, P2≈89%, P3=100%, P5 gap≈1.4, Bridge≈78%, P7≈98%
+- **After sentence splitting**: 52,387 pairs
+- **Train**: 41,909 | **Test**: 5,238 | **Exam**: 5,240 (locked)
+- **Vocabulary**: 6,164 unique characters
+- **Average sentence**: 20–80 characters
 
-### Step 2: P11 Joint Optimization (~15 min)
-
-```bash
-python p11_joint_train.py --epochs 200 --display 10
-```
-
-**Pushes P2 from ~89% → ~96%** by jointly training P1's projection with P2 feedback.
-
-### Step 3: Full Pipeline with P11 (~30 min)
-
-```bash
-python fullpipe_p11.py
-```
-
-Bridge reaches **~96%** with the optimized P11 projection.
-
-### Quick Diagnostics
+## Quick Start
 
 ```bash
-python seed_sweep.py         # P1+P2 seed screening, 3 seeds ~20 min
-python p2_diagnose.py        # P2 deep diagnosis, 100 epochs log every 5
+# Download public data
+python download_public_data.py
+
+# Train V19 (1000 epochs, ~17 days on RTX 5070)
+python train_v19_full.py --data public --epochs 1000 --display 10 --lr 0.003
+
+# Evaluate
+python eval_benchmark.py --data 5k --max_samples 1000
+
+# Test context cache
+python test_context_cache.py
 ```
 
-### Expected Results
-
-| Step | Time | Key Metric |
-|------|:----:|------------|
-| train_all.py | ~25 min | P1=98.6%, P2=89%, Bridge=78% |
-| p11_joint_train.py | ~15 min | P2=95.95% |
-| fullpipe_p11.py | ~30 min | Bridge=96.3% |
-
-GPU: ~300MB normal, 5GB peak. P1=27.8M params, total ~30M.
-
----
-
-## Project Structure
+## File Structure
 
 ```
-├── utils/config.py              # Global config (asymmetric dims, 512/64 heads)
-├── data/word_list_v2.txt        # 6,000 words (jieba frequency dict)
-├── P1_char_word/                # P1: 2048D encoder + StagedProjection → 128D
-├── P2_word_char/                # P2: 128D word → char decoder
-├── P3_word_attr/                # P3: 7-attribute binding
-├── P5_sentence/                 # P5: Words → Sentence
-├── P6_sent_word/                # P6: Sentence → Words decoder
-├── P7_cross_sent/               # P7: Cross-sentence routing
-├── P8_char_sent/                # P8: Chars → Sentence
-├── P9_sent_char/                # P9: Sentence → Chars
-├── p11_joint_train.py           # P11: P1_proj + P2 joint optimization
-├── p12_full_joint.py            # P12: P1_proj + P2 + Bridge 3-way joint
-├── fullpipe_p11.py              # Full pipeline with P11 projection
-├── train_all.py                 # Sequential P1→P2→P3→P5→Bridge→P7
-├── expand_data_v2.py            # jieba-based data generation
-├── full_pipeline_eval.py        # End-to-end Top-1/3/5/10 eval
-└── requirements.txt             # torch, jieba
+C:/ai/
+├── P1_char_word/          # Char→Word encoder (frozen)
+├── P6_sent_word/          # Sent→Word decoder (position embedding V6)
+├── P7_cross_sent/         # Cross-sentence router
+├── train_v19_full.py      # Main training script
+├── download_public_data.py
+├── eval_benchmark.py
+├── test_context_cache.py
+├── tool_agent.py           # Dual-agent debate system
+├── test_full_chain_v2.py
+└── utils/config.py
 ```
 
----
+## Author
 
-## Current Limitations
+**Wei Jinqi (卫锦旗)**
 
-| Limitation | Root Cause | Mitigation |
-|-----------|------------|------------|
-| Projection reversibility | 2048→128D information loss | P11 joint training (solved: 80.7→96%) |
-| Sentence diversity | 8000 SVO templates | Real Chinese corpus |
-| Modulation decay | Shared LR across zones | Independent LR per zone (planned) |
+## Citation
 
-**Architecture validated. P11 proves the 2048→128D projection is optimizable for downstream friendliness.**
+```bibtex
+@misc{wei2026v19,
+  title={V19: A White-box Chinese Cognition Engine},
+  author={Wei, Jinqi},
+  year={2026},
+  howpublished={\url{https://github.com/Xuan-yi-yan/V18-cognitive-architecture}},
+}
+```
 
----
+## License
 
-## Version History
-
-| Version | Key Change | P1 | P2 | Bridge |
-|---------|------------|:---:|:---:|:---:|
-| v5.1 | Asymmetric Staged baseline | 98.60% | 88.57% | 72.29% |
-| v7.1 | P2 explore/meta + P5 fix | 98.60% | 89.25% | 78.19% |
-| **v8.0** | **P11 joint (projection reversibility)** | **97.60%** | **95.95%** | **96.31%** |
-
----
-
-## Development Log
-
-[V18_2026-06-03_开发日志.txt](V18_2026-06-03_开发日志.txt) — complete history, all experiments, failures, and fixes.
+MIT — see [LICENSE](./LICENSE)
