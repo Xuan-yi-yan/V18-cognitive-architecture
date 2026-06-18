@@ -77,7 +77,7 @@ Output Words (B)
 | Per-word Cosine | 0.96 |
 | Inference Speed | 14ms/sent (71 sent/s) |
 
-*V19 (4.7M params, 128 heads) training in progress — targeting 95%+ word accuracy on 52K public dataset.*
+*V20 (5.22M params, 8-module full chain): CE tied-weights, P7 full-vocabulary routing, 14-module P3 attributes. Training on 52K public data.* [6/18 Update]
 
 ## Bugs We Slain (the hard way)
 
