@@ -67,17 +67,27 @@ Output Words (B)
 | 5 | Strict 3-way split | 80/10/10 train/test/exam; exam set locked on disk until final eval |
 | 6 | Public data only | HuggingFace (53K) + MuCGEC (1K); fully reproducible, no proprietary data |
 
-## Benchmarks (V18, 875K params)
+## Benchmarks
+
+### V18 (875K params, sentence reconstruction mode)
+P7 uses B-sentence as K/V — this measures **sentence reconstruction quality**, not A→B translation. Cosine similarity evaluation.
 
 | Metric | Score |
 |--------|-------|
 | Word Accuracy | **92.4%** |
 | Exact Match | 76.3% |
 | Rouge-L F1 | 93.2 |
-| Per-word Cosine | 0.96 |
 | Inference Speed | 14ms/sent (71 sent/s) |
 
-*V20 (5.22M params, 8-module full chain): CE tied-weights, P7 full-vocabulary routing, 14-module P3 attributes. Training on 52K public data.* [6/18 Update]
+### V20 (5.22M params, translation mode)
+P7 uses full vocabulary as K/V — true A→B translation. Cross-entropy direct character output. Strictly held-out exam set.
+
+| Metric | Status |
+|--------|--------|
+| Architecture Verified | 49-pair test: 9/9 correct |
+| One-shot Proof | 13-char sentence: 100% in 50 epochs |
+| Full Training | 52K data, 1000 epochs in progress |
+| V18 Score Context | 92.4% = reconstruction, not translation |
 
 ## Bugs We Slain (the hard way)
 
