@@ -1,13 +1,14 @@
-# V19 White-box Chinese Cognition Engine
+# V20 White-box Chinese Cognition Engine
 
-**A fully transparent, from-scratch Chinese language understanding system.**
+**CSDN爆款技术文章官方代码仓库 (350+阅读, 7赞, 6收藏)**
 
+[![CSDN](https://img.shields.io/badge/CSDN-中文博文-red)](https://blog.csdn.net/2604_96359779/article/details/162047132)
 [![Model](https://img.shields.io/badge/HuggingFace-V19_Model-blue)](https://huggingface.co/MIHUJIOUY/V19-cognitive-engine)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-![Params](https://img.shields.io/badge/params-4.7M-green)
+[![Dev.to](https://img.shields.io/badge/Dev.to-English_Blog-black)](https://dev.to/xuanyiyan/16-days-47m-params-...)
+![Params](https://img.shields.io/badge/params-5.22M-green)
 ![GPU](https://img.shields.io/badge/GPU-141MB-orange)
 
-> Built in 16 days. No black boxes. No pretrained embeddings. Every weight has a reason.
+> Built in 18 days. No black boxes. 591 independent loss signals. Every weight has a reason.
 
 ---
 
