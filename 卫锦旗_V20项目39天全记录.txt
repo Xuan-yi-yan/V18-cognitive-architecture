@@ -1,0 +1,476 @@
+═══════════════════════════════════════════════════════════════
+  卫锦旗 V20白盒中文认知引擎 — 41天完整开发记录
+  时间: 2026-05-12 ~ 2026-06-21 (前20天+后21天)
+  总文件: ~135个代码/文档/数据文件, ~30个子目录
+═══════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════
+第〇部分: 早期探索期 (5/12~6/1, 前20天, 7个实验文件夹)
+═══════════════════════════════════════════════════════════════
+
+  在正式命名P1-P9模块体系之前, 经历了漫长的对话系统原型探索。
+  从chat v6.0到chat v17, 从纯规则到神经网络再到分层架构。
+
+  C:/aixunlian1/ [最早实验, chat v6-v10]
+    chat_v6.0.txt [27K] — 最早的中文对话原型v6
+    chat.10.0.txt [69K] — v10版本, 已经具备对话+检索雏形
+    corpus.txt [105K] — 训练语料
+    training_corpus.txt [170K] — 更大训练语料
+    新建文本文档.txt [5K] — 早期笔记
+    data/ nn_weights/ stats_data/ — 数据+权重+统计
+
+  C:/aixunlian2/ [架构分层实验, chat v11-v12]
+    chat11.0.py.txt [87K] — v11, 引入分析权重+控制权重
+    chat12.0.py.txt [178K] — ★整个项目最大的单文件, 178K!
+                              全局控制+统计+对话+神经网络全在一个文件
+    analysis_weights/ combined_output_weights/ dialog_data/
+    global_control_weights/ neural_cache/ stat_weights/ statistical_weights/
+    — 7个权重目录, 说明此时已经有多模块分层设计的思路
+
+  C:/aixunlian3/ [语义数据库雏形, chat v13]
+    chat13.0.txt [6K] — v13, 简洁化
+    general_db.txt [12K] — ★通用语义数据库, 最早的"知识库"
+
+  C:/ai1/ [chat v14]
+    chat14.0.py.txt [94K] — v14, 94K代码
+    data/ — 对话数据
+
+  C:/ai4/ [训练框架雏形, chat v15-v16 + checkpoint]
+    chat15.0.txt [12K] — v15, 精简版
+    chat16.0.py.txt [75K] — v16, 75K代码
+    training_database.txt [14K] — ★最早的系统训练数据
+    vector_database.pt [145K] — ★最早的向量数据库
+    checkpoint_anchor.pth [1.6M] — ★最早的checkpoint: 锚点
+    checkpoint_decoder.pth [4.6M] — ★最早的checkpoint: 解码器
+    checkpoint_dialogue.pth [1.6M] — ★最早的checkpoint: 对话
+    → 三个checkpoint证明此时已分"锚点/解码/对话"三层
+
+  C:/ai5/ [层次参数实验, chat v17 + layer权重]
+    chta17.py.txt [60K] — v17, 60K代码
+    layer2/4/5/6_vectors.pt + layer2/4/5/6_params.pt — 8个层参数文件
+    predict_a_params.pt [19MB] — ★最大的单文件, 19MB预测参数
+    changju.txt duanjuzi.txt ciyu.txt — 长句/短句/词语数据
+    cross_qa.txt wenda.txt dada.txt — 问答数据
+
+  前20天总结:
+    从chat v6→v17, 从一个178K的单文件巨兽拆成了分层模块,
+    从checkpoint的命名(anchor/decoder/dialogue)可以看出一开始就
+    有"锚点→解码→对话"的分层设计理念。
+    这个阶段产出了30+个文件, 包括最早的向量数据库、语义数据库、
+    训练数据库和层次参数。为后续P1-P9的模块化架构建了基础。
+
+
+═══════════════════════════════════════════════════════════════
+第一部分: 核心模块 (8个引擎模块, P1~P9)
+═══════════════════════════════════════════════════════════════
+
+  P1_char_word/ [字→词编码器, 96K参数, 冻结]
+    model.py — CharToWordModel, 2字→128D, 6000词表cross-attn
+    checkpoints/P1_best.pt — 预训练权重, 106MB
+    checkpoints/Bridge_*.pt, overnight_*.pt — 早期实验checkpoint
+
+  P2_word_char/ [词→字解码, 反向映射]
+    早期模块, 后因P6统一替代而弃用
+
+  P3_word_attr/ [属性栈, 14模块规则引擎, 0参数]
+    stack.py — P3AttributeStack, 编排所有子模块
+    attr_packet.py — AttributePacket, 每词完整属性描述
+    p3a_basic.py — A: 基础词类 (noun/verb/pronoun/...)
+    p3s_semantic.py — S: 语义族 (人物/地点/时间/...)
+    p3p_syntax.py — P: 句法位置 (主/谓/宾/定/状/补)
+    p3q_question.py — Q: 疑问槽 (who/where/when/...)
+    p3r_person.py — R: 人称 (first/second/third)
+    p3e_emotion.py — E: 情感极性 (16种情感)
+    p3d_direction.py — D: 动作方向 (outward/inward/...)
+    p3t_tense.py — T: 时态体态 (12种时体标记) [6/18新增]
+    p3n_number.py — N: 数量程度 (数词+量词+程度) [6/18新增]
+    p3c_connect.py — C: 连接逻辑 (11种逻辑+关联词对) [6/18新增]
+    p3v_voice.py — V: 语态语气 (被动/把字/情态/语气) [6/18新增]
+    p3m_modifier.py — M: 修饰限定 (形/副/的得地/比较) [6/18新增]
+    p3c_code.py — X: 代码技术 (5语言+技术词汇) [6/18新增]
+    p3p_punct.py — Punct: 标点符号 (句末/分隔/引号) [6/18新增]
+    p3l_linkage.py — P3-L: 312头属性联动, 23组独立注意力, 158K
+    model.py — SubjectBindingModel, 128D+64头交叉注意力
+    train.py, train_batch.py — P3独立训练脚本
+    relation_head.py — 关系头
+    retrieval.py — P3检索
+    labels.txt, words_*.txt — 词表文件 (16个)
+
+  P5_sentence/ [词→句合成, 128D统一版]
+    model.py — SentenceSynthesis, 角色加权±融合
+    train.py — 训练脚本
+    ★ 已发现contrastive_loss正样本永远为0的Bug (千问第1轮发现)
+
+  P6_sent_word/ [句→词解码器, 4.37M参数, V1-V6演进]
+    model.py — SentToWordsDecoder V6最终版 (128头+位置嵌入)
+    model_v1.py — P6 V1最简版 (P5精确逆, 单Linear) [6/18新增]
+    train.py, train_bridge.py — 训练脚本
+
+  P7_cross_sent/ [跨句路由器, 226K参数, v1-v9演进]
+    model.py — P7WordRouter2048 (32头×4D) + CrossSentenceRouter
+               forward_batch (批量+padding mask) [6/17新增]
+               全词表K/V路由 (不偷看Bv) [6/18新增]
+    ★ v1-v8: 模式坍缩→门控→层级调制 共8次迭代
+
+  P8_char_sent/ [字→句编码]
+    model.py — CharToSent
+
+  P9_pipeline/ + P9_sent_char/ [早期流水线尝试, 后并入统一链路]
+
+  P3_data/ [P3训练数据]
+    labels.txt, words_*.txt (16个词表文件)
+
+
+═══════════════════════════════════════════════════════════════
+第二部分: 训练脚本 (23个, 从V18到V20的三代演进)
+═══════════════════════════════════════════════════════════════
+
+  train_v19_turbo.py [32K, ★当前正在运行的主训练脚本]
+    V20全链路: CharEmbed→P7→P3→P3-L→ABC→Gate→Master→P6
+    功能: 固定batch=14, CE tied weights, 正交char_embed,
+          P3预缓存, 硬清理显存, Ctrl+C自动保存,
+          自适应batch(已废弃), VRAM监控
+    参数: 5.22M, 52K数据, E20 loss=8.16
+
+  train_v19_full.py [9K, V19原始版本]
+    原始V19: P1→P7→Gate→P6, cosine loss, 偷看Bv
+    历史意义: V19的首次全链路训练, E1=43.5%考试准确率
+
+  train_v19_chain.py [16K, V19链式版本]
+    过渡版本: P1→P7→P3→ABC→Gate→P6
+
+  train_v19_fullchain.py [18K, 全模块版本]
+    全模块: P1→P7主线+P7副线→P3→P3-L→ABC→Gate→P6
+
+  train_all.py [27K, 最早的全模块脚本]
+    V18时代: 包含P1-P9的全流水线
+
+  overnight_train.py [26K], overnight_link_train.py [18K]
+    早起通宵训练实验
+
+  bridge_*.py (bridge_diagnose, bridge_long_train)
+    P5↔P8桥接训练, 诊断脚本
+
+  solo_train_*.py [4个, 6/18新增]
+    solo_train_p7.py — P7独立验证 (384 loss值)
+    solo_train_abc.py — ABC独立验证 (127 loss值)
+    solo_train_p6.py — P6独立验证 (tied weights+字符输出)
+    solo_train_master.py — Master Gate独立验证 (5→5温控)
+    ★ 49对数据, 每个模块1分钟内验证通过
+
+  train_a_focus.py [10K]
+    StageA结构决策专项训练, 15类, 2000轮
+
+  train_abc_fine.py [13K] + train_abc_fine_np.py [15K]
+    ABC高细粒度训练, Torch版+NumPy版, 64D B + 48D C
+
+  train_joint_finetune.py [20K], train_p3l_standalone.py
+    联合微调 + P3-L独立训练
+
+  train_p6_standalone.py, train_p7_standalone.py, train_p7_route_fast.py
+    P6/P7独立训练脚本
+
+  expand_data_*.py (4个: v2, v3, 5k)
+    数据扩增脚本
+
+  pipeline_train_v1.py [31K, 最大的单文件]
+    早期全流水线训练
+
+
+═══════════════════════════════════════════════════════════════
+第三部分: 文档体系 (19个TXT/MD, 中英双语)
+═══════════════════════════════════════════════════════════════
+
+  版本演进文档:
+    V18_架构全景.txt [5K] — V18架构概述
+    V19_架构全景.txt [5K] — V19架构概述
+    V19_完整链路_全景.txt [17K] — V19全链路+通信逻辑
+    V19_全模块架构_参数与通信.txt [17K] — 参数总表+维度转换
+    V19_项目终态记录.txt [10K] — V19最终状态
+    V20_架构全景.txt [11K] — ★当前V20最终版
+    V20_推理系统_完整设计.txt [10K] — 推理系统完整设计
+    V20_推理输出逻辑_设计.txt [10K] — 输出循环设计
+    V20_英文扩展架构.txt [10K] — 双语扩展设计
+
+  开发日志:
+    V18_2026-06-03_开发日志.txt [16K] — V18早期6天记录
+    V18_V19_开发日志.txt [23K] — ★V18→V20完整18天日志
+    卫锦旗_V18项目6天开发全记录.txt [21K] — 早期个人记录
+
+  对外文档:
+    README.md [11K] + README_EN.md [6K] — GitHub中英文首页
+    MODEL_CARD.md [6K] — HuggingFace模型卡
+    blog_16days_en.txt [7K] — Dev.to/Medium英文博文
+    blog_zhihu_cn.txt [4K] — 知乎/掘金/CSDN中文博文
+
+  给千问的解释文档:
+    千问_V20解释.txt [2K] — 8条质疑逐一回应
+    千问_读写头缓存说明.txt [5K] — 三层缓存机制
+    双核辩论Agent_说明.txt [7K] — 双Agent系统说明
+
+
+═══════════════════════════════════════════════════════════════
+第四部分: 验证与测试 (15个)
+═══════════════════════════════════════════════════════════════
+
+  全链路测试:
+    test_full_chain.py, test_full_chain_v2.py — 全链路验证
+    pipeline_test.py — 流水线测试
+    full_pipeline_eval.py, fullpipe_p11.py, fullpipe_qa.py — 完整评估
+
+  模块测试:
+    test_p3_stack.py — P3属性栈测试
+    test_p5p6_roundtrip.py — P5↔P6往返测试
+    test_p7_sent.py, test_p7_sent_v2.py, test_p7_sent_v3.py — P7句向量测试
+
+  上下文缓存:
+    test_context_cache.py — 三层缓存+自适应窗口+跑题检测
+
+  QA测试:
+    qa_test.py, qa_10round_test.py, qa_full_log.py, qa_p3_retrieval.py
+
+  数据验证:
+    seed_sweep.py, segment_test.py, batch_review.py
+    gpu_util_test.py — GPU利用率快速测试
+
+  推理原型:
+    inference_demo.py [11K] — ★推理系统CPU原型 (6/19凌晨新增)
+      验证: 锚定生成✓ 属性合成✓ 写头✓ 读头✓ 跑题检测✓ 自适应窗口✓
+
+  最简单P6验证:
+    solo_p6_minimal.py — 64D+1个Linear+CE, 50轮, 验证P6核心能力
+
+
+═══════════════════════════════════════════════════════════════
+第五部分: 对话与Agent系统 (6个)
+═══════════════════════════════════════════════════════════════
+
+  tool_agent.py [18K] — ★双核辩论Agent (DeepSeek+千问)
+    功能: DS分析→千问审查→DS吸收, 最多3轮收敛
+    战绩: V18架构分析, Gate目标修正, P6复读机诊断,
+          P5/P8/Bridge 12处问题发现
+    6/18更新: API key刷新
+
+  multi_agent.py [10K] — 多Agent框架
+
+  attr_dialogue_proto.py [20K] — 属性驱动对话V1原型
+  attr_dialogue_v2.py [26K] — 属性驱动对话V2 (三变体+规则引擎)
+  attr_network_train.py [23K] — ABC可训练网络 (三阶段+Gate)
+
+  chat_server.py [14K] + chat_ui.py [13K] + chat_ui.html [8K]
+    — 对话系统Web界面 (Qt+Flask+HTML)
+
+
+═══════════════════════════════════════════════════════════════
+第六部分: 工具与发布 (12个)
+═══════════════════════════════════════════════════════════════
+
+  数据工具:
+    download_public_data.py — HF+MuCGEC下载, 53K+1K→52K
+    prepare_lcqmc.py — LCQMC数据准备
+
+  评测工具:
+    eval_benchmark.py — 标准评测 (BLEU/EM/Rouge-L)
+    benchmark_v18.py — V18标准跑分
+
+  发布工具:
+    devto_publish.py — Dev.to API发布
+    hf_check.py + hf_upload.py — HuggingFace上传
+
+  辅助:
+    wows_autopilot.py — 战舰世界AI (个人项目)
+    navalart_ship_gen.py — 舰船生成
+
+
+═══════════════════════════════════════════════════════════════
+第七部分: 发布平台 (8个)
+═══════════════════════════════════════════════════════════════
+
+  海外:
+    GitHub    — github.com/Xuan-yi-yan/V18-cognitive-architecture
+                2 Stars, 英文README, 全部代码+文档
+    HuggingFace — huggingface.co/MIHUJIOUY/V19-cognitive-engine
+                  P1_best.pt(106MB) + V19_full.pt(19MB) + Model Card
+    Dev.to     — dev.to/xuanyiyan/16-days-47m-params-...
+                 写作初试身手徽章, [6/18更新V20]
+    Medium     — medium.com/p/af588067c95e
+
+  国内:
+    掘金 — juejin.cn (已发布)
+    CSDN — blog.csdn.net/.../162047132 (4赞4收藏7阅读)
+    知乎 — zhuanlan.zhihu.com (已发布)
+    BOSS直聘 — 快手+海纳数聚两家AI岗主动联系
+
+
+═══════════════════════════════════════════════════════════════
+第八部分: 训练数据体系
+═══════════════════════════════════════════════════════════════
+
+  数据来源:
+    shibing624/chinese_text_correction (HuggingFace) — 53,298对
+    MuCGEC (NAACL 2022) — 1,038对
+    断句后: 52,387对
+
+  数据拆分:
+    训练: 41,909对 (80%)
+    测试: 5,238对 (10%)
+    考试: 5,240对 (10%) 锁死在 V19_exam_set.pt
+
+  字符表: 6,166个唯一字符
+  测试用小数据: quick_test_data.txt (50对, 纯中文)
+
+  cache/ — GPU/RAM/Disk缓存文件
+  attr_cache_disk/ — 属性缓存磁盘文件
+  dialogue_cache/ — 对话缓存
+
+
+═══════════════════════════════════════════════════════════════
+第九部分: Bug歼灭史 (14个)
+═══════════════════════════════════════════════════════════════
+
+  前7个 (V18时代, 6/1-6/16):
+    1. Mode Collapse (P7全输出同一个词)
+    2. Gate对称锁死 (std=0.0001)
+    3. 梯度链断裂 (.item()毁300轮)
+    4. 复读机 (P6坍缩到高频词)
+    5. CUDA OOM (P1全量attention, 25.76GiB)
+    6. 空格复读机 (HF数据空格污染)
+    7. sent_vec信息丢失 (均值池化)
+
+  后7个 (V20时代, 6/17修复):
+    8. Cosine loss欺骗 (型/模cos=0.999但字不同)
+    9. P7 Bv偷看 (训练时直接传B句, 学B→B恒等)
+    10. CharEmbed均值坍缩 (正交向量均→零向量)
+    11. ABC无独立loss (空跑不学习)
+    12. Gate吃压缩值 (847→4维)
+    13. CE loss未tied weights (脱离char_embed空间)
+    14. P7全词表K/V→batch OOM (6166字注意力炸显存)
+
+
+═══════════════════════════════════════════════════════════════
+第十部分: 版本演进
+═══════════════════════════════════════════════════════════════
+
+  V18 (6/11, 875K, 4.5K数据):
+    P1→P7→Gate→P6(16头), cosine loss, 92.4%词准确率
+
+  V19 (6/15, 4.7M, 52K数据):
+    P1→P7→Gate→P6(128头), E1考试43.5%
+
+  V19 Chain (6/17, 4.78M):
+    P1→P7→P3→ABC→Gate→P6, ABC三阶段逻辑加入
+
+  V19 FullChain (6/17, 5.06M):
+    P1→P7[主线+副线]→P3→P3-L→ABC→Gate→P6, 全模块上线
+
+  V20 (6/18, 5.22M): ★当前版本
+    CharEmbed(正交)→P7(全词表K/V)→P3(14模块64D)→P3-L(312头)
+    →ABC(A15+B64+C48+辅助loss)→主Gate(12→256)→Master(5→5)
+    →P6 CE tied→字输出
+    核心修复: CE直出字, 不偷看Bv, 正交embed, 14模块P3, tied weights
+
+  推理系统 (6/19):
+    重心锚定+连续生成+偏离停止+属性合成+三层缓存
+    CPU原型全部验证通过, 0新增参数
+
+
+═══════════════════════════════════════════════════════════════
+第十一部分: 当前状态 (6/19凌晨)
+═══════════════════════════════════════════════════════════════
+
+  GPU训练中:
+    文件: train_v19_turbo.py (32K, 主脚本)
+    架构: V20全链路8模块
+    数据: 52,387对 (公开HF+MuCGEC)
+    Epoch: E20, loss=8.16 (CE, 随机基线8.73)
+    Batch: 固定14
+    速度: 每轮24分钟
+    ETA: 约17天 (1000轮)
+    VRAM: ~3-4GB (12GB总显存, 有余量打游戏)
+
+  CPU推理原型:
+    文件: inference_demo.py
+    验证: 6项全过
+    等待: V20训练完成后加载权重
+
+  待完成:
+    上下文写通路 (检索→喂P7→影响P6)
+    考试集最终评测 (锁死未碰)
+    英文扩展实施
+
+
+═══════════════════════════════════════════════════════════════
+第十二部分: 第40天 (6/20) — P3单字改造+梯度断裂发现
+═══════════════════════════════════════════════════════════════
+
+  P3单字词表扩展 (p3a_basic.py + p3s_semantic.py):
+    新增200+单字到词类/语义族:
+      common_nouns: 人/手/脚/头/眼/耳/鼻/口/舌/牙/身/心/血/骨/...
+      common_verbs: 吃/喝/看/写/去/买/做/玩/听/说/走/跑/跳/...
+      common_adjs: 好/坏/大/小/高/低/长/短/快/慢/多/少/远/近/...
+    P3识别率从~20%→~50% (单字)
+    P3字合并逻辑: 相邻字→查词表→最长匹配合并 ("医院"→noun_place)
+
+  梯度断裂发现 (50对10轮探针):
+    P3L_max=0.0045死固定4轮 → 确认梯度断
+    追查: p3l_features()和训练循环中 两处 scores.detach() 切断梯度
+    修复: .detach()删除, flatten()[:3]→torch.stack([mean,std,range])
+    全量梯度流通, 312头不再3/360000采样
+
+  P3属性进入P7:
+    p7_input_proj(192→128)连接: char_embed+attr_vec拼接→P7
+    之前: P3属性白白计算后被丢弃
+    之后: P3语言学标注进入交叉注意力
+
+  ABCloss系数修正:
+    loss_A_c: 0.01→1.0  loss_B_c: 0.05→1.0  loss_C_c: 0.05→1.0
+    ABC从0.1%参与度→27%
+    Master Gate温控接管权重分配 (不再是硬编码系数)
+
+
+═══════════════════════════════════════════════════════════════
+第十三部分: 第41天 (6/21) — 双核辩论审计+全链路修复
+═══════════════════════════════════════════════════════════════
+
+  DeepSeek+千问六轮辩论审计 (10:00-18:00):
+    代码: train_v19_turbo.py + P7_cross_sent/model.py
+    发现: 20个问题 (7致命+8中等+5轻微)
+    修复: 15/20 (75%)
+
+  致命修复 (7个):
+    1. p7_input_proj从未调用 → P3属性进P7交叉注意力 ✗→✓
+    2. forward_batch层级调制硬编码0 → _loss_vec驱动, ~127K复活
+    3. 考试路径绕过P7 → 统一为P7+p7_input_proj+P3路径
+    4. gate_loss永远≈0.1常数 → wg_batch.std()×10, 0.01-1.0
+    5. wo_exp均值池化 → wo_batch原始保留位置信息
+    6. ABC loss系数0.01/0.05 → 1.0/1.0/1.0, 不再摆设
+    7. c2i冗余6166字 → 采样后3005字, 训练全覆盖
+
+  中等修复 (5个):
+    - P3-L梯度: 两处detach全删, 全量统计
+    - attr_b引用别名: .clone()
+    - 三处推理P6加gate: 展示/考试/记忆验证
+    - 删~80行死代码: p3l_features/make_batches/adaptive_batch_size
+    - P3单字支持: 200+词条+字合并逻辑
+
+  训练优化:
+    自适应batch废弃 → 固定56
+    速度: 78s→37s/轮 (翻倍)
+    GPU: 44%利用率, 显存5GB/12GB
+    P3预缓存: 常开, 不再每批CPU推理
+
+  当前训练 (6/21晚):
+    数据: 1500对, 2989字, batch=56
+    E1: loss=8.74, P3L_max=1.00 (P3-L活着!)
+    E200: loss=6.39 (高原期突破)
+    E312: loss=4.60 (加速下降)
+    2000轮ETA: ~15小时 (进行中)
+
+
+═══════════════════════════════════════════════════════════════
+  卫锦旗
+  2026-05-12 ~ 2026-06-21
+  41天, ~135个文件, 14个Bug+15项辩论修复, 6个大版本,
+  8个发布平台, 7个早期实验文件夹,
+  chat v6→v17→P1→V18→V19→V20→V20.1的完整轨迹
+═══════════════════════════════════════════════════════════════
